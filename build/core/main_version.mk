@@ -1,4 +1,5 @@
-# Copyright (C) 2019 The LineageOS Project
+#
+# Copyright (C) 2019 Paranoid Android
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,11 +12,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+#
 
-$(call inherit-product, vendor/pa/config/common_full_phone.mk)
+# Paranoid Android System Version
+ADDITIONAL_BUILD_PROPERTIES += \
+    ro.pa.version=$(PA_VERSION)
 
-PRODUCT_COPY_FILES += \
-    device/generic/goldfish/data/etc/permissions/privapp-permissions-goldfish.xml:$(TARGET_COPY_OUT_SYSTEM)/etc/permissions/privapp-permissions-goldfish.xml \
-
-# Allow building otatools
-TARGET_FORCE_OTA_PACKAGE := true
+# Paranoid Android Platform Display Version
+ADDITIONAL_BUILD_PROPERTIES += \
+    ro.pa.display.version=$(PA_DISPLAY_VERSION)
