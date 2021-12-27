@@ -77,3 +77,6 @@ SKIP_BOOT_JARS_CHECK := true
 # the size of the system image. This has no bearing on stack traces, but will
 # leave less information available via JDWP.
 PRODUCT_MINIMIZE_JAVA_DEBUG_INFO := true
+
+# Sepolicy
+$(call inherit-product, vendor/flamingo/target/product/sepolicy.mk)
