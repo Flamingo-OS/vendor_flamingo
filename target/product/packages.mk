@@ -12,14 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Abstruct
-PRODUCT_PACKAGES += \
-    Abstruct
-
-# Camera
-PRODUCT_PACKAGES += \
-    GoogleCameraGo
-
 # curl
 PRODUCT_PACKAGES += \
     curl
@@ -37,10 +29,6 @@ PRODUCT_PACKAGES += \
 # Neural Network
 PRODUCT_PACKAGES += \
     libprotobuf-cpp-full-rtti
-
-# Paranoid Packages
-PRODUCT_PACKAGES += \
-    ParanoidPapers
 
 # Theme Picker
 PRODUCT_PACKAGES += \
