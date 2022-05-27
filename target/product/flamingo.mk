@@ -1,4 +1,5 @@
 # Copyright (C) 2021 Paranoid Android
+# Copyright (C) 2022 Flamingo
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,18 +13,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# AOSPA Versioning.
-$(call inherit-product, vendor/aospa/target/product/version.mk)
+# Versioning.
+$(call inherit-product, vendor/flamingo/target/product/version.mk)
 
 # Don't dexpreopt prebuilts. (For GMS).
 DONT_DEXPREOPT_PREBUILTS := true
 
 # Filesystem
-TARGET_FS_CONFIG_GEN += vendor/aospa/target/config/config.fs
+TARGET_FS_CONFIG_GEN += vendor/flamingo/target/config/config.fs
 
 # HIDL
 DEVICE_FRAMEWORK_COMPATIBILITY_MATRIX_FILE += \
-     vendor/aospa/target/config/aospa_vendor_framework_compatibility_matrix.xml
+     vendor/flamingo/target/config/flamingo_vendor_framework_compatibility_matrix.xml
 
 # Include Common Qualcomm Device Tree.
 $(call inherit-product, device/qcom/common/common.mk)
@@ -32,40 +33,34 @@ $(call inherit-product, device/qcom/common/common.mk)
 $(call inherit-product, vendor/qcom/sdclang/config/SnapdragonClang.mk)
 
 # Include Overlay makefile.
-$(call inherit-product, vendor/aospa/overlay/overlays.mk)
+$(call inherit-product, vendor/flamingo/overlay/overlays.mk)
 
 # Include Packages makefile.
-$(call inherit-product, vendor/aospa/target/product/packages.mk)
+$(call inherit-product, vendor/flamingo/target/product/packages.mk)
 
 # Include Properties makefile.
-$(call inherit-product, vendor/aospa/target/product/properties.mk)
+$(call inherit-product, vendor/flamingo/target/product/properties.mk)
 
-# Include GMS, Modules, and Pixel features.
-$(call inherit-product, vendor/google/gms/config.mk)
-$(call inherit-product, vendor/google/pixel/config.mk)
-
-ifeq ($(TARGET_FLATTEN_APEX), false)
-$(call inherit-product-if-exists, vendor/google/modules/build/mainline_modules_s.mk)
-else
-$(call inherit-product-if-exists, vendor/google/modules/build/mainline_modules_s_flatten_apex.mk)
+ifeq ($(GAPPS_BUILD),true)
+    # Include GMS, Modules, and Pixel features.
+    $(call inherit-product-if-exists, vendor/google/gms/config.mk)
+    $(call inherit-product-if-exists, vendor/google/pixel/config.mk)
 endif
 
-ifneq ($(wildcard vendor/google/modules/.),)
 # Flatten APEXs for performance
 OVERRIDE_TARGET_FLATTEN_APEX := true
 # This needs to be specified explicitly to override ro.apex.updatable=true from
 # # prebuilt vendors, as init reads /product/build.prop after /vendor/build.prop
 PRODUCT_PRODUCT_PROPERTIES += ro.apex.updatable=false
-endif
 
 # Move Wi-Fi modules to vendor.
 PRODUCT_VENDOR_MOVE_ENABLED := true
 
 # Permissions
 PRODUCT_COPY_FILES += \
-    vendor/aospa/target/config/permissions/privapp-permissions-qti.xml:$(TARGET_COPY_OUT_SYSTEM)/etc/permissions/privapp-permissions-qti.xml \
-    vendor/aospa/target/config/permissions/privapp-permissions-hotword.xml:$(TARGET_COPY_OUT_PRODUCT)/etc/permissions/privapp-permissions-hotword.xml \
-    vendor/aospa/target/config/permissions/qti_whitelist.xml:$(TARGET_COPY_OUT_SYSTEM)/etc/sysconfig/qti_whitelist.xml
+    vendor/flamingo/target/config/permissions/privapp-permissions-qti.xml:$(TARGET_COPY_OUT_SYSTEM)/etc/permissions/privapp-permissions-qti.xml \
+    vendor/flamingo/target/config/permissions/privapp-permissions-hotword.xml:$(TARGET_COPY_OUT_PRODUCT)/etc/permissions/privapp-permissions-hotword.xml \
+    vendor/flamingo/target/config/permissions/qti_whitelist.xml:$(TARGET_COPY_OUT_SYSTEM)/etc/sysconfig/qti_whitelist.xml
 
 # Skip boot JAR checks.
 SKIP_BOOT_JARS_CHECK := true

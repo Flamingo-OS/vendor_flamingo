@@ -1,4 +1,4 @@
-# Copyright (C) 2021 Paranoid Android
+# Copyright 2022 Flamingo
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,53 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#
-# Handle various build version information.
-#
-# Guarantees that the following are defined:
-#     AOSPA_MAJOR_VERSION
-#     AOSPA_MINOR_VERSION
-#     AOSPA_BUILD_VARIANT
-#
+# Version and fingerprint
+FLAMINGO_VERSION_MAJOR := 1
+FLAMINGO_VERSION_MINOR := 0
+FLAMINGO_VERSION := $(FLAMINGO_VERSION_MAJOR).$(FLAMINGO_VERSION_MINOR)
 
-# This is the global AOSPA version flavor that determines the focal point
-# behind our releases. This is bundled alongside $(AOSPA_MINOR_VERSION)
-# and only changes per major Android releases.
-AOSPA_MAJOR_VERSION := sapphire
+# Set props
+PRODUCT_SYSTEM_DEFAULT_PROPERTIES += \
+  ro.flamingo.build.device=$(FLAMINGO_BUILD) \
+  ro.flamingo.build.version=$(FLAMINGO_VERSION)
 
-# The version code is the upgradable portion during the cycle of
-# every major Android release. Each version code upgrade indicates
-# our own major release during each lifecycle.
-AOSPA_MINOR_VERSION := 1
+FLAMINGO_OTA_PACKAGE_NAME := FLAMINGO-$(FLAMINGO_VERSION)-$(FLAMINGO_BUILD)-$(TARGET_BUILD_VARIANT)
 
-# Build Variants
-#
-# Alpha: Development / Test releases
-# Beta: Public releases with CI
-# Release: Final Product | No Tagging
-ifdef AOSPA_BUILDTYPE
-  ifeq ($(AOSPA_BUILDTYPE), ALPHA)
-      AOSPA_BUILD_VARIANT := alpha
-  else ifeq ($(AOSPA_BUILDTYPE), BETA)
-      AOSPA_BUILD_VARIANT := beta
-  else ifeq ($(AOSPA_BUILDTYPE), RELEASE)
-      AOSPA_BUILD_VARIANT := release
-  endif
+ifeq ($(strip $(OFFICIAL_BUILD)),true)
+FLAMINGO_OTA_PACKAGE_NAME += -OFFICIAL
 else
-  AOSPA_BUILD_VARIANT := unofficial
+FLAMINGO_OTA_PACKAGE_NAME += -UNOFFICIAL
 endif
 
-# Build Date
-BUILD_DATE := $(shell date -u +%Y%m%d)
-
-# AOSPA Version
-AOSPA_VERSION := $(AOSPA_MAJOR_VERSION)-$(AOSPA_MINOR_VERSION)-$(AOSPA_BUILD)-$(AOSPA_BUILD_VARIANT)-$(BUILD_DATE)
-
-PRODUCT_SYSTEM_DEFAULT_PROPERTIES += \
-    ro.aospa.version=$(AOSPA_VERSION)
-
-# The properties will be uppercase for parse by Settings, etc.
-PRODUCT_SYSTEM_DEFAULT_PROPERTIES += \
-    ro.aospa.version.major=$(shell V1=$(AOSPA_MAJOR_VERSION); echo $${V1^}) \
-    ro.aospa.version.minor=$(AOSPA_MINOR_VERSION) \
-    ro.aospa.build.variant=$(shell V2=$(AOSPA_BUILD_VARIANT); echo $${V2^})
+ifeq ($(strip $(GAPPS_BUILD)),true)
+FLAMINGO_OTA_PACKAGE_NAME += -GAPPS
+else
+FLAMINGO_OTA_PACKAGE_NAME += -VANILLA
+endif

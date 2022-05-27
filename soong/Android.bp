@@ -1,9 +1,9 @@
-// AOSPA Soong Configurations
+// Flamingo Soong Configurations
 
 soong_config_module_type {
     name: "needs_camera_boottime",
     module_type: "cc_defaults",
-    config_namespace: "aospaGlobalVars",
+    config_namespace: "flamingoGlobalVars",
     bool_variables: ["needs_camera_boottime"],
     properties: ["cppflags"],
 }
@@ -20,7 +20,7 @@ needs_camera_boottime {
 soong_config_module_type {
     name: "target_process_sdk_version_overrides",
     module_type: "cc_defaults",
-    config_namespace: "aospaGlobalVars",
+    config_namespace: "flamingoGlobalVars",
     value_variables: ["target_process_sdk_version_override"],
     properties: ["cppflags"],
 }
@@ -37,7 +37,7 @@ target_process_sdk_version_overrides {
 soong_config_module_type {
     name: "target_shim_libs",
     module_type: "cc_defaults",
-    config_namespace: "aospaGlobalVars",
+    config_namespace: "flamingoGlobalVars",
     value_variables: ["target_ld_shim_libs"],
     properties: ["cppflags"],
 }
@@ -54,7 +54,7 @@ target_shim_libs {
 soong_config_module_type {
     name: "vendor_init",
     module_type: "cc_defaults",
-    config_namespace: "aospaGlobalVars",
+    config_namespace: "flamingoGlobalVars",
     value_variables: ["target_init_vendor_lib"],
     properties: ["whole_static_libs"],
 }
@@ -71,7 +71,7 @@ vendor_init {
 soong_config_module_type {
     name: "surfaceflinger_udfps_lib",
     module_type: "cc_defaults",
-    config_namespace: "aospaGlobalVars",
+    config_namespace: "flamingoGlobalVars",
     value_variables: ["target_surfaceflinger_udfps_lib"],
     properties: [
         "cppflags",
