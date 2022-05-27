@@ -13,13 +13,11 @@
      See the License for the specific language governing permissions and
      limitations under the License.
 -->
-<resources>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.flamingo.overlay.settingsprovider">
 
-    <string-array name="themes">
-        <item>default</item>
-        <item>blue</item>
-        <item>purple</item>
-        <item>red</item>
-    </string-array>
-
-</resources>
+    <overlay
+        android:isStatic="true"
+        android:priority="600"
+        android:targetPackage="com.android.providers.settings" />
+</manifest>

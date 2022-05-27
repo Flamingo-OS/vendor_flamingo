@@ -13,6 +13,7 @@
 // limitations under the License.
 
 runtime_resource_overlay {
-    name: "AOSPAFrameworksOverlay",
+    name: "SettingsProviderOverlay",
     product_specific: true,
+    sdk_version: "current",
 }

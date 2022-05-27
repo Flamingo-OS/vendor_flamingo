@@ -14,9 +14,9 @@
 
 # Overlays
 PRODUCT_PACKAGES += \
-    AOSPAFrameworksOverlay \
-    AOSPAImmersiveNavigationOverlay \
-    AOSPASettingsOverlay \
-    AOSPASettingsProviderOverlay \
-    AOSPASystemUIOverlay \
-    ParanoidLauncherOverlay
+    FrameworksOverlay \
+    ImmersiveNavigationOverlay \
+    SettingsOverlay \
+    SettingsProviderOverlay \
+    SystemUIOverlay \
+    ThemePickerOverlay
