@@ -1,2 +1,0 @@
-# lmkd properties
-ro.vendor.lmk.             u:object_r:vendor_lmkd_prop:s0
