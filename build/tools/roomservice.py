@@ -33,9 +33,9 @@ default_manifest = ".repo/manifest.xml"
 
 custom_local_manifest = ".repo/local_manifests/device_manifest.xml"
 custom_default_revision = "A12"
-custom_dependencies = "krypton.dependencies"
-org_manifest = "krypton-ssh"  # leave empty if org is provided in manifest
-org_display = "AOSP-Krypton"  # needed for displaying
+custom_dependencies = "flamingo.dependencies"
+org_manifest = "flamingo"  # leave empty if org is provided in manifest
+org_display = "Flamingo OS"  # needed for displaying
 
 github_auth = None
 
