@@ -14,16 +14,19 @@
 # limitations under the License.
 
 ifneq ($(wildcard certs/releasekey.*),)
-FLAMINGO_KEY_CERT_PAIR := certs/releasekey
+SIGNING_KEYS := certs/releasekey
 endif
 
-ifeq ($(OFFICIAL_BUILD),true)
-    ifeq ($(FLAMINGO_KEY_CERT_PAIR),)
-        $(error "Official builds must be signed with release keys!")
+ifeq ($(strip $(OFFICIAL_BUILD)),true)
+    ifeq ($(strip $(SIGNING_KEYS)),)
+        $(error "Official builds must be signed with release keys, run keygen to generate signing keys")
     endif
 endif
 
-FLAMINGO_KEY_CERT_PAIR ?= $(DEFAULT_KEY_CERT_PAIR)
+SIGNING_KEYS ?= $(DEFAULT_KEY_CERT_PAIR)
+
+PRODUCT_DEFAULT_DEV_CERTIFICATE := $(SIGNING_KEYS)
+PRODUCT_OTA_PUBLIC_KEYS := $(PRODUCT_DEFAULT_DEV_CERTIFICATE)
 
 # Versioning.
 $(call inherit-product, vendor/flamingo/target/product/version.mk)

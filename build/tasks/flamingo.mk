@@ -16,7 +16,7 @@
 FLAMINGO_OTA := $(PRODUCT_OUT)/$(FLAMINGO_OTA_PACKAGE_NAME)
 
 $(FLAMINGO_OTA): $(BUILT_TARGET_FILES_PACKAGE) $(OTA_FROM_TARGET_FILES)
-	$(call build-ota-package-target,$@,-k $(FLAMINGO_KEY_CERT_PAIR) --output_metadata_path $(INTERNAL_OTA_METADATA))
+	$(call build-ota-package-target,$@,-k $(DEFAULT_KEY_CERT_PAIR) --output_metadata_path $(INTERNAL_OTA_METADATA))
 
 .PHONY: flamingo
 flamingo: $(FLAMINGO_OTA)
