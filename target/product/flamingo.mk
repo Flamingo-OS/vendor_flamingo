@@ -83,3 +83,6 @@ PRODUCT_MINIMIZE_JAVA_DEBUG_INFO := true
 
 # Sepolicy
 $(call inherit-product, vendor/flamingo/target/product/sepolicy.mk)
+
+PRODUCT_PACKAGES += \
+    privapp_additional_whitelist_com.android.systemui
