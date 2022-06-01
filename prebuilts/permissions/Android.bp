@@ -3,6 +3,7 @@ prebuilt_etc {
     system_ext_specific: true,
     sub_dir: "permissions",
     src: "com.android.systemui.xml",
+    filename: "flamingo-privapp-permissions-systemui.xml"
 }
 
 prebuilt_etc {
@@ -10,4 +11,5 @@ prebuilt_etc {
     system_ext_specific: true,
     sub_dir: "permissions",
     src: "com.android.settings.xml",
+    filename: "flamingo-privapp-permissions-settings.xml"
 }
