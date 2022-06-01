@@ -51,6 +51,13 @@ PRODUCT_PACKAGES += \
     MatlogX
 endif
 
+# Graphene cam
+TARGET_BUILD_GRAPHENEOS_CAMERA ?= true
+ifeq ($(strip $(TARGET_BUILD_GRAPHENEOS_CAMERA)),true)
+PRODUCT_PACKAGES += \
+    Camera
+endif
+
 # Repainter (kdrag0n)
 PRODUCT_PACKAGES += \
     RepainterServicePriv
