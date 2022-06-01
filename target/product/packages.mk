@@ -72,3 +72,7 @@ PRODUCT_PACKAGES += \
 # WiFi
 PRODUCT_PACKAGES += \
     libwpa_client
+
+# Updater
+PRODUCT_PACKAGES += \
+    Updater
