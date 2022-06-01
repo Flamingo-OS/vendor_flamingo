@@ -34,10 +34,6 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
     ThemePicker
 
-# Gestures
-PRODUCT_PACKAGES += \
-    vendor.aospa.power-service
-
 # Lawnchair
 TARGET_BUILD_LAWNCHAIR ?= true
 ifeq ($(strip $(TARGET_BUILD_LAWNCHAIR)),true)
