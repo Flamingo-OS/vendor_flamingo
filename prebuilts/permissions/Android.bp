@@ -1,0 +1,13 @@
+prebuilt_etc {
+    name: "privapp_additional_whitelist_com.android.systemui",
+    system_ext_specific: true,
+    sub_dir: "permissions",
+    src: "com.android.systemui.xml",
+}
+
+prebuilt_etc {
+    name: "privapp_additional_whitelist_com.android.settings",
+    system_ext_specific: true,
+    sub_dir: "permissions",
+    src: "com.android.settings.xml",
+}
