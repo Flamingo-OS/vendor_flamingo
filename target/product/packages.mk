@@ -44,6 +44,13 @@ ifeq ($(strip $(TARGET_BUILD_LAWNCHAIR)),true)
 	include vendor/lawnchair/lawnchair.mk
 endif
 
+# Matlog X
+TARGET_BUILD_MATLOG ?= true
+ifeq ($(strip $(TARGET_BUILD_MATLOG)),true)
+PRODUCT_PACKAGES += \
+    MatlogX
+endif
+
 # Repainter (kdrag0n)
 PRODUCT_PACKAGES += \
     RepainterServicePriv
