@@ -38,6 +38,12 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
     vendor.aospa.power-service
 
+# Lawnchair
+TARGET_BUILD_LAWNCHAIR ?= true
+ifeq ($(strip $(TARGET_BUILD_LAWNCHAIR)),true)
+	include vendor/lawnchair/lawnchair.mk
+endif
+
 # Repainter (kdrag0n)
 PRODUCT_PACKAGES += \
     RepainterServicePriv
