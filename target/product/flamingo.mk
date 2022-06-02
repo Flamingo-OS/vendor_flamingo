@@ -88,3 +88,6 @@ $(call inherit-product, vendor/flamingo/target/product/sepolicy.mk)
 PRODUCT_PACKAGES += \
     privapp_additional_whitelist_com.android.systemui \
     privapp_additional_whitelist_com.android.settings
+
+# Theme overlays
+$(call inherit-product, vendor/themes/common.mk)
