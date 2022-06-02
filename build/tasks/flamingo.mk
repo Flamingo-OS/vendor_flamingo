@@ -13,18 +13,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FLAMINGO_OTA := $(PRODUCT_OUT)/$(FLAMINGO_OTA_PACKAGE_NAME)
+FLAMINGO_OTA := $(PRODUCT_OUT)/$(FLAMINGO_OTA_PACKAGE_NAME).zip
 
 $(FLAMINGO_OTA): $(BUILT_TARGET_FILES_PACKAGE) $(OTA_FROM_TARGET_FILES)
 	$(call build-ota-package-target,$@,-k $(DEFAULT_KEY_CERT_PAIR) --output_metadata_path $(INTERNAL_OTA_METADATA))
 
 .PHONY: flamingo
 flamingo: $(FLAMINGO_OTA)
-	$(hide) mv $(FLAMINGO_OTA) $(FLAMINGO_OUT)/$(FLAMINGO_OTA_PACKAGE_NAME)-$(shell date "+%Y%m%d-%H%M").zip
+	$(hide) mv $(FLAMINGO_OTA) $(FLAMINGO_OUT)/$(FLAMINGO_OTA_PACKAGE_NAME)-$(shell date "+%Y%m%d-%H%M")-full.zip
 	@echo "Flamingo full OTA package is ready"
 
 ifneq ($(strip $(PREVIOUS_TARGET_FILES_PACKAGE)),)
-FLAMINGO_INCREMENTAL_OTA := $(PRODUCT_OUT)/$(FLAMINGO_OTA_PACKAGE_NAME)-incremental
+FLAMINGO_INCREMENTAL_OTA := $(PRODUCT_OUT)/$(FLAMINGO_OTA_PACKAGE_NAME)-incremental.zip
 
 $(FLAMINGO_INCREMENTAL_OTA): $(BUILT_TARGET_FILES_PACKAGE) $(OTA_FROM_TARGET_FILES)
 	$(OTA_FROM_TARGET_FILES) \
@@ -36,11 +36,11 @@ $(FLAMINGO_INCREMENTAL_OTA): $(BUILT_TARGET_FILES_PACKAGE) $(OTA_FROM_TARGET_FIL
 
 .PHONY: flamingo-incremental
 flamingo-incremental: $(FLAMINGO_INCREMENTAL_OTA)
-	$(hide) mv $(FLAMINGO_INCREMENTAL_OTA) $(FLAMINGO_OUT)/$(FLAMINGO_OTA_PACKAGE_NAME)-incremental-$(shell date "+%Y%m%d-%H%M").zip
+	$(hide) mv $(FLAMINGO_INCREMENTAL_OTA) $(FLAMINGO_OUT)/$(FLAMINGO_OTA_PACKAGE_NAME)-$(shell date "+%Y%m%d-%H%M")-incremental.zip
 	@echo "Flamingo incremental OTA package is ready"
 endif
 
-FLAMINGO_FASTBOOT_PACKAGE := $(PRODUCT_OUT)/$(FLAMINGO_OTA_PACKAGE_NAME)-img
+FLAMINGO_FASTBOOT_PACKAGE := $(PRODUCT_OUT)/$(FLAMINGO_OTA_PACKAGE_NAME)-fastboot.zip
 
 $(FLAMINGO_FASTBOOT_PACKAGE): $(BUILT_TARGET_FILES_PACKAGE) $(IMG_FROM_TARGET_FILES)
 	$(IMG_FROM_TARGET_FILES) \
@@ -48,7 +48,7 @@ $(FLAMINGO_FASTBOOT_PACKAGE): $(BUILT_TARGET_FILES_PACKAGE) $(IMG_FROM_TARGET_FI
 
 .PHONY: flamingo-fastboot
 flamingo-fastboot: $(FLAMINGO_FASTBOOT_PACKAGE)
-	$(hide) mv $(FLAMINGO_FASTBOOT_PACKAGE) $(FLAMINGO_OUT)/$(FLAMINGO_OTA_PACKAGE_NAME)-$(shell date "+%Y%m%d-%H%M")-img.zip
+	$(hide) mv $(FLAMINGO_FASTBOOT_PACKAGE) $(FLAMINGO_OUT)/$(FLAMINGO_OTA_PACKAGE_NAME)-$(shell date "+%Y%m%d-%H%M")-fastboot.zip
 	@echo "Flamingo fastboot package is ready"
 
 .PHONY: flamingo-boot
