@@ -21,4 +21,5 @@ PRODUCT_PACKAGES += \
     SettingsProviderOverlay \
     SystemUIOverlay \
     ThemePickerOverlay \
-    RepainterServicePrivOverlay
+    RepainterServicePrivOverlay \
+    SimpleDeviceConfigOverlay

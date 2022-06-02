@@ -76,3 +76,7 @@ PRODUCT_PACKAGES += \
 # Updater
 PRODUCT_PACKAGES += \
     Updater
+
+# SDC
+PRODUCT_PACKAGES += \
+    SimpleDeviceConfig
