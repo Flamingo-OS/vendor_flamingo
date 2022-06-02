@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    Copyright (C) 2021 The Proton AOSP Project
+    Copyright (C) 2022 FlamingoOS Project
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -17,7 +17,5 @@
 <resources>
     <bool name="flag_conversations">true</bool>
     <bool name="flag_charging_ripple">true</bool>
-    <bool name="flag_monet">true</bool>
     <bool name="flag_smartspace">true</bool>
-    <bool name="flag_smartspace_shared_element_transition">true</bool>
 </resources>
