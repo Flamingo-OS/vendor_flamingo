@@ -80,3 +80,7 @@ PRODUCT_PACKAGES += \
 # SDC
 PRODUCT_PACKAGES += \
     SimpleDeviceConfig
+
+# GamingMode
+PRODUCT_PACKAGES += \
+    GamingMode
