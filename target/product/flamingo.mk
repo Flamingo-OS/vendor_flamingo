@@ -91,3 +91,6 @@ PRODUCT_PACKAGES += \
 
 # Theme overlays
 $(call inherit-product, vendor/themes/common.mk)
+
+# Inherit from lineage hidl repo
+$(call inherit-product-if-exists, hardware/lineage/interfaces/config.mk)
