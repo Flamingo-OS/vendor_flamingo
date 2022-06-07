@@ -34,9 +34,6 @@ $(call inherit-product, vendor/flamingo/target/product/version.mk)
 # Optimize everything for preopt
 PRODUCT_DEX_PREOPT_DEFAULT_COMPILER_FILTER := everything
 
-# Don't dexpreopt prebuilts. (For GMS).
-DONT_DEXPREOPT_PREBUILTS := true
-
 # Filesystem
 TARGET_FS_CONFIG_GEN += vendor/flamingo/target/config/config.fs
 
