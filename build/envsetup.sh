@@ -461,3 +461,7 @@ function __print_warn() {
 function __print_error() {
     echo -e "${ERROR}: $*${NC}"
 }
+
+function jkgrep() {
+    find . -name .repo -prune -o -name .git -prune -o -name out -prune -o -type f \( -name '*\.java' -o -name '*\.kt' \) -exec grep --color -n "$@" {} +
+}
