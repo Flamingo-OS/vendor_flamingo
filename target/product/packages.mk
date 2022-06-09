@@ -16,9 +16,6 @@
 PRODUCT_PACKAGES += \
     curl
 
-# Set compiler filter "verify" and disable AOT-compilation in dexpreopt
-RELAX_USES_LIBRARY_CHECK := true
-
 # HIDL
 PRODUCT_PACKAGES += \
     android.hidl.base@1.0 \
