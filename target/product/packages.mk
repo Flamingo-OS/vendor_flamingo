@@ -101,6 +101,6 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
     SimpleDeviceConfig
 
-# GamingMode
+# GameSpace
 PRODUCT_PACKAGES += \
-    GamingMode
+    GameSpace
