@@ -192,6 +192,7 @@ function launch() {
         [ -d "$outputDir" ] && rm -rf "${outputDir:?}/*"
     elif $installclean; then
         make install-clean
+        rm -rf "$OUT/obj/KERNEL_OBJ"
         [ -d "$outputDir" ] && rm -rf "${outputDir:?}/*"
     fi
 
