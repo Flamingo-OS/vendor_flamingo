@@ -68,15 +68,17 @@ PRODUCT_PRODUCT_PROPERTIES += ro.apex.updatable=false
 PRODUCT_VENDOR_MOVE_ENABLED := true
 
 # Permissions
-PRODUCT_COPY_FILES += \
-    vendor/flamingo/target/config/permissions/privapp-permissions-qti.xml:$(TARGET_COPY_OUT_SYSTEM)/etc/permissions/privapp-permissions-qti.xml \
-    vendor/flamingo/target/config/permissions/privapp-permissions-hotword.xml:$(TARGET_COPY_OUT_PRODUCT)/etc/permissions/privapp-permissions-hotword.xml \
-    vendor/flamingo/target/config/permissions/qti_whitelist.xml:$(TARGET_COPY_OUT_SYSTEM)/etc/sysconfig/qti_whitelist.xml
+PRODUCT_PACKAGES += \
+    privapp_additional_whitelist_systemui \
+    privapp_additional_whitelist_settings \
+    privapp_additional_whitelist_hotword \
+    privapp_additional_whitelist_qti \
+    qti_whitelist
 
 # Sensitive phone numbers and APN configurations
-PRODUCT_COPY_FILES += \
-    vendor/flamingo/target/config/apns-conf.xml:$(TARGET_COPY_OUT_PRODUCT)/etc/apns-conf.xml \
-    vendor/flamingo/target/config/sensitive_pn.xml:$(TARGET_COPY_OUT_SYSTEM)/etc/sensitive_pn.xml
+PRODUCT_PACKAGES += \
+    apns_conf \
+    sensitive_pn
 
 # Skip boot JAR checks.
 SKIP_BOOT_JARS_CHECK := true
@@ -88,11 +90,6 @@ PRODUCT_MINIMIZE_JAVA_DEBUG_INFO := true
 
 # Sepolicy
 $(call inherit-product, vendor/flamingo/target/product/sepolicy.mk)
-
-# Privapp permissions
-PRODUCT_PACKAGES += \
-    privapp_additional_whitelist_com.android.systemui \
-    privapp_additional_whitelist_com.android.settings
 
 # Theme overlays
 $(call inherit-product, vendor/themes/common.mk)
