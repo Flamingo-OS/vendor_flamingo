@@ -53,6 +53,6 @@ flamingo-fastboot: $(FLAMINGO_FASTBOOT_PACKAGE)
 
 .PHONY: flamingo-boot
 flamingo-boot: $(BUILT_TARGET_FILES_PACKAGE)
-	$(hide) cp <(unzip -o -q -p $(BUILT_TARGET_FILES_PACKAGE) IMAGES/boot.img) \
-	$(FLAMINGO_OUT)/$(FLAMINGO_OTA_PACKAGE_NAME)-$(shell date "+%Y%m%d-%H%M")-boot.img
+	$(hide) cp $(call intermediates-dir-for,PACKAGING,target_files)/*/IMAGES/boot.img \
+		$(FLAMINGO_OUT)/$(FLAMINGO_OTA_PACKAGE_NAME)-$(shell date "+%Y%m%d-%H%M")-boot.img
 	@echo "Boot image copied"
