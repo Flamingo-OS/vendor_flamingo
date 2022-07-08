@@ -341,7 +341,7 @@ function gen_json() {
     VERSION=$(get_prop_value ro.flamingo.build.version)
 
     local FILE
-    FILE=$(find "$outDir" -type f -name "FLAMINGO*$FLAMINGO_BUILD*.zip" -printf "%T@ %p\n" | grep -vE "incremental|img" | tail -n 1 | awk '{ print $2 }')
+    FILE=$(find "$outDir" -type f -name "FlamingoOS*$FLAMINGO_BUILD*.zip" -printf "%T@ %p\n" | grep -vE "incremental|fastboot" | tail -n 1 | awk '{ print $2 }')
     if ! $incremental && [ ! -f "$FILE" ]; then
         __print_error "OTA file not found!"
         return 1
@@ -352,7 +352,7 @@ function gen_json() {
     fi
 
     local INCREMENTAL_FILE
-    INCREMENTAL_FILE=$(find "$outDir" -type f -name "FLAMINGO*$FLAMINGO_BUILD*.zip" -printf "%T@ %p\n" | grep "incremental" | tail -n 1 | awk '{ print $2 }')
+    INCREMENTAL_FILE=$(find "$outDir" -type f -name "FlamingoOS*$FLAMINGO_BUILD*.zip" -printf "%T@ %p\n" | grep "incremental" | tail -n 1 | awk '{ print $2 }')
     if $incremental && [ ! -f "$INCREMENTAL_FILE" ]; then
         __print_error "Incremental OTA file not found!"
         return 1
@@ -367,7 +367,6 @@ function gen_json() {
     DATE=$(($(get_prop_value ro.build.date.utc) * 1000))
 
     local PRIMARY_URL="https://flamingo.e11z.net/d/$GIT_BRANCH/$FLAMINGO_BUILD"
-    local SECONDARY_URL="https://sourceforge.net/projects/flamingo/files/$GIT_BRANCH/$FLAMINGO_BUILD"
 
     local INCREMENTAL_NAME
     INCREMENTAL_NAME=$(basename "$INCREMENTAL_FILE")
@@ -380,8 +379,7 @@ function gen_json() {
     "date": "$DATE",
     "url": "$PRIMARY_URL/$INCREMENTAL_NAME",
     "download_sources": {
-        "OneDrive": "$PRIMARY_URL/$INCREMENTAL_NAME",
-        "Sourceforge": "$SECONDARY_URL/$INCREMENTAL_NAME"
+        "OneDrive": "$PRIMARY_URL/$INCREMENTAL_NAME"
     },
     "file_name": "$INCREMENTAL_NAME",
     "file_size": "$(du -b "$INCREMENTAL_FILE" | awk '{print $1}')",
@@ -406,7 +404,6 @@ EOF
     "url": "$PRIMARY_URL/$NAME",
     "download_sources": {
         "OneDrive": "$PRIMARY_URL/$NAME",
-        "Sourceforge": "$SECONDARY_URL/$NAME"
     },
     "file_name": "$NAME",
     "file_size": "$SIZE",
