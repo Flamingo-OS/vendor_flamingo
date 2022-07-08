@@ -104,3 +104,12 @@ PRODUCT_PACKAGES += \
 # GameSpace
 PRODUCT_PACKAGES += \
     GameSpace
+
+# Vanilla
+ifneq ($(GAPPS_BUILD),true)
+
+PRODUCT_PACKAGES += \
+    Apps \
+    GmsCompat
+
+endif
