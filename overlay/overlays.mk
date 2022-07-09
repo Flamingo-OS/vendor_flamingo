@@ -23,3 +23,10 @@ PRODUCT_PACKAGES += \
     ThemePickerOverlay \
     RepainterServicePrivOverlay \
     SimpleDeviceConfigOverlay
+
+ifneq ($(GAPPS_BUILD),true)
+
+PRODUCT_PACKAGES += \
+    VanillaFrameworksOverlay
+
+endif
