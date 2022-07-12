@@ -315,6 +315,12 @@ def main():
         action="store_true",
         help="Bump up min version number of Flamingo"
     )
+    parser.add_argument(
+        "--no-sync",
+        dest="no_sync",
+        action="store_false",
+        help="Skip force syncing all the repos"
+    )
     args = parser.parse_args()
 
     branch = "refs/tags/{}".format(args.branch_to_merge)
@@ -331,7 +337,8 @@ def main():
         if REPOS_TO_MERGE:
             if args.merge_manifest:
                 merge_manifest(is_system, branch)
-            force_sync(REPOS_TO_MERGE)
+            if not args.no_sync:
+                force_sync(REPOS_TO_MERGE)
             merge(REPOS_TO_MERGE, branch)
             os.chdir(WORKING_DIR)
             print_results(branch)
