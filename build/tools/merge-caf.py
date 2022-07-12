@@ -16,10 +16,10 @@
 # limitations under the License.
 
 """
-Merge script for AOSPA
+Merge script for Flamingo OS. All thanks to AOSPA
 
  The source directory; this is automatically two folder up because the script
- is located in vendor/aospa/build/tools. Other ROMs will need to change this. The logic is
+ is located in vendor/flamingo/build/tools. Other ROMs will need to change this. The logic is
  as follows:
 
  1. Get the absolute path of the script with os.path.realpath in case there is a symlink
@@ -40,7 +40,7 @@ from git.exc import GitCommandError
 
 BASE_URL = "https://git.codelinaro.org/clo/la/"
 WORKING_DIR = "{0}/../../../..".format(os.path.dirname(os.path.realpath(__file__)))
-MANIFEST_NAME = "aospa.xml"
+MANIFEST_NAME = "flamingo.xml"
 REPOS_TO_MERGE = {}
 REPOS_RESULTS = {}
 
@@ -91,16 +91,20 @@ def list_default_repos(is_system):
 def read_custom_manifest(default_repos):
     """ Finds all repos that need to be merged """
     print("Finding repos to merge...")
-    with open("{0}/.repo/manifests/{1}".format(WORKING_DIR, MANIFEST_NAME)) as manifest:
-        root = Et.parse(manifest).getroot()
-        removed_repos = []
-        project_repos = []
-        reversed_default = {value: key for key, value in default_repos.items()}
+    removed_repos = []
+    project_repos = []
+    reversed_default = {value: key for key, value in default_repos.items()}
+
+    with open("{0}/.repo/manifests/remove.xml".format(WORKING_DIR)) as remove_manifest:
+        root = Et.parse(remove_manifest).getroot()
         for repo in root:
             if repo.tag == "remove-project":
                 removed_repos.append(repo.get("name"))
-            else:
-                if repo.get("remote") == "aospa":
+
+    with open("{0}/.repo/manifests/{1}".format(WORKING_DIR, MANIFEST_NAME)) as manifest:
+        root = Et.parse(manifest).getroot()
+        for repo in root:
+            if repo.get("remote") == "flamingo":
                     project_repos.append(repo.get("path"))
 
         for repo in removed_repos:
