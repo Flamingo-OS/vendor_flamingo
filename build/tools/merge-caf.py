@@ -31,6 +31,7 @@ Merge script for Flamingo OS. All thanks to AOSPA
 
 import argparse
 import os
+import re
 import shutil
 import subprocess
 import xml.etree.ElementTree as Et
@@ -242,6 +243,36 @@ def push_repos():
         except:
             print(f"Failed to push {repo_dir}")
 
+def bump_version():
+    """
+    Bump FLAMINGO_VERSION_MINOR whenever a new SPL is merged
+    """
+    MAJOR_VERSION_STRING_PATTERN = "FLAMINGO_VERSION_MAJOR := \\d+"
+    MINOR_VERSION_STRING_PATTERN = "FLAMINGO_VERSION_MINOR := \\d+"
+
+    file_path = f"{WORKING_DIR}/vendor/flamingo/target/product/version.mk"
+    fin = open(file_path, "rt")
+    data = fin.read()
+    fin.close()
+    major_ver_str = re.findall(MAJOR_VERSION_STRING_PATTERN, data)[0]
+    major_ver = int(major_ver_str.partition(":= ")[-1])
+    old_minor_ver_str = re.findall(MINOR_VERSION_STRING_PATTERN, data)[0]
+    minor_ver = int(old_minor_ver_str.partition(":= ")[-1])
+    new_minor_ver_str = old_minor_ver_str.replace(str(minor_ver), str(minor_ver + 1))
+    data = data.replace(old_minor_ver_str, new_minor_ver_str)
+
+    fout = open(file_path, "wt")
+    fout.write(data)
+    fout.close()
+
+    repo = Repo(f"{WORKING_DIR}/vendor/flamingo")
+    repo.git.add("target/product/version.mk")
+    
+    repo.index.commit(f"flamingo: Bump version to {major_ver}.{minor_ver + 1}")
+    origin = repo.remote(name='flamingo')
+    assert origin.exists()
+    origin.push(f'HEAD:{BRANCH_NAME}').raise_if_error()
+     
 
 def main():
     """Gathers and merges all repos from CAF and
@@ -279,6 +310,12 @@ def main():
         action="store_true",
         help="Push all your merged repos after testing"
     )
+    parser.add_argument(
+        "--bump",
+        dest="bump_version",
+        action="store_true",
+        help="Bump up min version number of Flamingo"
+    )
     args = parser.parse_args()
 
     branch = "refs/tags/{}".format(args.branch_to_merge)
@@ -310,6 +347,8 @@ def main():
     if(args.push_repos):
         push_repos()
 
+    if(args.bump_version):
+        bump_version()
 
 if __name__ == "__main__":
     # execute only if run as a script
