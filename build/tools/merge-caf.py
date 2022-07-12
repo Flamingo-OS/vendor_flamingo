@@ -38,7 +38,7 @@ import xml.etree.ElementTree as Et
 import git
 from git.exc import GitCommandError
 
-BASE_URL = "https://source.codeaurora.org/quic/la/"
+BASE_URL = "https://git.codelinaro.org/clo/la/"
 WORKING_DIR = "{0}/../../../..".format(os.path.dirname(os.path.realpath(__file__)))
 MANIFEST_NAME = "aospa.xml"
 REPOS_TO_MERGE = {}
