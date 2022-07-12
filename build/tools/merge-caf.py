@@ -129,7 +129,6 @@ def force_sync(repo_lst):
         "sync",
         "-c",
         "--force-sync",
-        "-f",
         "--no-clone-bundle",
         "--no-tag",
         "-j",
@@ -165,16 +164,16 @@ def merge_manifest(is_system, branch):
     with open("{0}/.repo/manifests/default.xml".format(WORKING_DIR)) as manifestxml:
         tree = Et.parse(manifestxml)
         root = tree.getroot()
-        if is_system:
-            root.findall("default")[0].set("revision", branch)
-        else:
-            lst = root.findall("remote")
-            remote = None
-            for elem in lst:
-                if elem.attrib["name"] == "caf_vendor":
-                    remote = elem
-                    break
-            remote.set("revision", branch)
+        lst = root.findall("remote")
+        remote = None
+        for elem in lst:
+            if is_system and elem.attrib["name"] == "clo_system":
+                remote = elem
+                break
+            elif elem.attrib["name"] == "clo_vendor":
+                remote = elem
+                break
+        remote.set("revision", branch)
         tree.write("{0}/.repo/manifests/default.xml".format(WORKING_DIR))
         cpu_count = str(os.cpu_count())
         subprocess.run(
@@ -183,7 +182,6 @@ def merge_manifest(is_system, branch):
                 "sync",
                 "-c",
                 "--force-sync",
-                "-f",
                 "--no-clone-bundle",
                 "--no-tag",
                 "-j",
@@ -194,7 +192,8 @@ def merge_manifest(is_system, branch):
             check=False,
         )
         git_repo = git.Repo("{0}/.repo/manifests".format(WORKING_DIR))
-        git_repo.git.execute(["git", "checkout", "."])
+        git_repo.git.add("*")
+        git_repo.index.commit(f"manifest: Update to {branch}")
 
 
 def check_actual_merged_repo(repo, branch):
