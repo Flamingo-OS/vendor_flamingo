@@ -37,12 +37,14 @@ import xml.etree.ElementTree as Et
 
 import git
 from git.exc import GitCommandError
+from git import Repo
 
 BASE_URL = "https://git.codelinaro.org/clo/la/"
 WORKING_DIR = "{0}/../../../..".format(os.path.dirname(os.path.realpath(__file__)))
 MANIFEST_NAME = "flamingo.xml"
 REPOS_TO_MERGE = {}
 REPOS_RESULTS = {}
+BRANCH_NAME = "A12.1"
 
 
 # useful helpers
@@ -226,6 +228,21 @@ def print_results(branch):
         print("Unable to retrieve any results")
 
 
+def push_repos():
+    """
+    Push all the merged repos to our git
+    """
+    for repo_dir in REPOS_RESULTS["Successes"]:
+        try:
+            print(f"Pushing {repo_dir}")
+            repo = Repo(f"{WORKING_DIR}/{repo_dir}")
+            origin = repo.remote(name='flamingo')
+            assert origin.exists()
+            origin.push(f'HEAD:{BRANCH_NAME}').raise_if_error()   
+        except:
+            print(f"Failed to push {repo_dir}")
+
+
 def main():
     """Gathers and merges all repos from CAF and
     reports all repos that need to be fixed manually"""
@@ -256,6 +273,12 @@ def main():
         action="store_true",
         help="Dry run the merge script (for testing purposes)",
     )
+    parser.add_argument(
+        "--push",
+        dest="push_repos",
+        action="store_true",
+        help="Push all your merged repos after testing"
+    )
     args = parser.parse_args()
 
     branch = "refs/tags/{}".format(args.branch_to_merge)
@@ -283,6 +306,9 @@ def main():
         merge(repo_lst, branch)
         os.chdir(WORKING_DIR)
         print_results(branch)
+
+    if(args.push_repos):
+        push_repos()
 
 
 if __name__ == "__main__":
