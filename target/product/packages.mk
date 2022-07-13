@@ -110,6 +110,8 @@ ifneq ($(GAPPS_BUILD),true)
 
 PRODUCT_PACKAGES += \
     Apps \
-    GmsCompat
+    GmsCompat \
+    libjni_latinime \
+    libjni_latinimegoogle
 
 endif
