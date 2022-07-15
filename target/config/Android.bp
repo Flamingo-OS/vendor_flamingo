@@ -37,20 +37,6 @@ prebuilt_etc {
 }
 
 prebuilt_etc {
-    name: "privapp_additional_whitelist_qti",
-    sub_dir: "permissions",
-    src: "permissions/privapp-permissions-qti.xml",
-    filename_from_src: true
-}
-
-prebuilt_etc {
-    name: "qti_whitelist",
-    sub_dir: "sysconfig",
-    src: "permissions/qti_whitelist.xml",
-    filename_from_src: true
-}
-
-prebuilt_etc {
     name: "apns_conf",
     product_specific: true,
     src: "apns-conf.xml",
