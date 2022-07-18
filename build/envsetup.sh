@@ -330,20 +330,13 @@ function gen_json() {
     FLAVOR=$(get_prop_value ro.flamingo.build.flavor)
 
     local JSON_DEVICE_DIR=ota/"$FLAMINGO_BUILD"
-    local JSON
     if [[ $FLAVOR == "Vanilla" ]]; then
-        JSON=$JSON_DEVICE_DIR/vanilla_ota.json
-    else
-        JSON=$JSON_DEVICE_DIR/ota.json
+        JSON_DEVICE_DIR="$JSON_DEVICE_DIR/Vanilla"
     fi
-
+    local JSON=$JSON_DEVICE_DIR/ota.json
     local INCREMENTAL_JSON
     if $incremental; then
-        if [[ $FLAVOR == "Vanilla" ]]; then
-            INCREMENTAL_JSON=$JSON_DEVICE_DIR/vanilla_incremental_ota.json
-        else
-            INCREMENTAL_JSON=$JSON_DEVICE_DIR/incremental_ota.json
-        fi
+        INCREMENTAL_JSON=$JSON_DEVICE_DIR/incremental_ota.json
     fi
 
     if [ ! -d "$JSON_DEVICE_DIR" ]; then
@@ -414,7 +407,7 @@ EOF
     "version": "$VERSION",
     "date": "$DATE",
     "download_sources": {
-        "OneDrive": "$PRIMARY_URL/$NAME",
+        "OneDrive": "$PRIMARY_URL/$NAME"
     },
     "file_name": "$NAME",
     "file_size": "$SIZE",
