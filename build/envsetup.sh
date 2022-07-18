@@ -326,11 +326,24 @@ function gen_json() {
         return 1
     fi
 
+    local FLAVOR
+    FLAVOR=$(get_prop_value ro.flamingo.build.flavor)
+
     local JSON_DEVICE_DIR=ota/"$FLAMINGO_BUILD"
-    JSON=$JSON_DEVICE_DIR/ota.json
+    local JSON
+    if [[ $FLAVOR == "Vanilla" ]]; then
+        JSON=$JSON_DEVICE_DIR/vanilla_ota.json
+    else
+        JSON=$JSON_DEVICE_DIR/ota.json
+    fi
+
     local INCREMENTAL_JSON
     if $incremental; then
-        INCREMENTAL_JSON=$JSON_DEVICE_DIR/incremental_ota.json
+        if [[ $FLAVOR == "Vanilla" ]]; then
+            INCREMENTAL_JSON=$JSON_DEVICE_DIR/vanilla_incremental_ota.json
+        else
+            INCREMENTAL_JSON=$JSON_DEVICE_DIR/incremental_ota.json
+        fi
     fi
 
     if [ ! -d "$JSON_DEVICE_DIR" ]; then
@@ -366,7 +379,7 @@ function gen_json() {
     local DATE
     DATE=$(($(get_prop_value ro.build.date.utc) * 1000))
 
-    local PRIMARY_URL="https://flamingo.e11z.net/d/$GIT_BRANCH/$FLAMINGO_BUILD"
+    local PRIMARY_URL="https://flamingo.e11z.net/d/$GIT_BRANCH/$FLAMINGO_BUILD/$FLAVOR"
 
     local INCREMENTAL_NAME
     INCREMENTAL_NAME=$(basename "$INCREMENTAL_FILE")
@@ -377,7 +390,6 @@ function gen_json() {
 {
     "version": "$VERSION",
     "date": "$DATE",
-    "url": "$PRIMARY_URL/$INCREMENTAL_NAME",
     "download_sources": {
         "OneDrive": "$PRIMARY_URL/$INCREMENTAL_NAME"
     },
@@ -401,7 +413,6 @@ EOF
 {
     "version": "$VERSION",
     "date": "$DATE",
-    "url": "$PRIMARY_URL/$NAME",
     "download_sources": {
         "OneDrive": "$PRIMARY_URL/$NAME",
     },
