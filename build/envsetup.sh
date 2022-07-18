@@ -329,10 +329,7 @@ function gen_json() {
     local FLAVOR
     FLAVOR=$(get_prop_value ro.flamingo.build.flavor)
 
-    local JSON_DEVICE_DIR=ota/"$FLAMINGO_BUILD"
-    if [[ $FLAVOR == "Vanilla" ]]; then
-        JSON_DEVICE_DIR="$JSON_DEVICE_DIR/Vanilla"
-    fi
+    local JSON_DEVICE_DIR="ota/$FLAMINGO_BUILD/$FLAVOR"
     local JSON=$JSON_DEVICE_DIR/ota.json
     local INCREMENTAL_JSON
     if $incremental; then
