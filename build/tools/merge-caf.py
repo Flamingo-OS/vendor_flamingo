@@ -170,7 +170,7 @@ def merge_manifest(is_system, branch):
             if is_system and elem.attrib["name"] == "clo_system":
                 remote = elem
                 break
-            elif elem.attrib["name"] == "clo_vendor":
+            elif not is_system and elem.attrib["name"] == "clo_vendor":
                 remote = elem
                 break
         remote.set("revision", branch)
@@ -325,7 +325,7 @@ def main():
 
     branch = "refs/tags/{}".format(args.branch_to_merge)
 
-    is_system = "QSSI" in branch
+    is_system = "LA.QSSI" in branch
     repo_lst, default_repos = get_manual_repos(args, is_system)
     if repo_lst is None and default_repos is None:
         return
