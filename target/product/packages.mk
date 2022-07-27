@@ -115,3 +115,7 @@ PRODUCT_PACKAGES += \
     libjni_latinimegoogle
 
 endif
+
+# Stk
+PRODUCT_PACKAGES += \
+    Stk
