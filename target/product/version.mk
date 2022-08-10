@@ -23,11 +23,15 @@ else
 FLAMINGO_BUILD_FLAVOR := Vanilla
 endif
 
+# Custom security patch
+CUSTOM_SECURITY_PATCH := 2022-08-05
+
 # Set props
 PRODUCT_SYSTEM_DEFAULT_PROPERTIES += \
   ro.flamingo.build.device=$(FLAMINGO_BUILD) \
   ro.flamingo.build.version=$(FLAMINGO_VERSION) \
-  ro.flamingo.build.flavor=$(FLAMINGO_BUILD_FLAVOR)
+  ro.flamingo.build.flavor=$(FLAMINGO_BUILD_FLAVOR) \
+  ro.flamingo.build_security_patch=$(CUSTOM_SECURITY_PATCH)
 
 FLAMINGO_OTA_PACKAGE_NAME := FlamingoOS-v$(FLAMINGO_VERSION)-$(FLAMINGO_BUILD)-$(TARGET_BUILD_VARIANT)
 
