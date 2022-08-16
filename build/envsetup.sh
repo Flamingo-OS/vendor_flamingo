@@ -369,7 +369,7 @@ function gen_json() {
     local DATE
     DATE=$(($(get_prop_value ro.build.date.utc) * 1000))
 
-    local PRIMARY_URL="https://flamingo.e11z.net/d/$GIT_BRANCH/$FLAMINGO_BUILD/$FLAVOR"
+    local PRIMARY_URL="https://downloads.e11z.net/d/flamingo/$GIT_BRANCH/$FLAMINGO_BUILD/$FLAVOR"
 
     local INCREMENTAL_NAME
     INCREMENTAL_NAME=$(basename "$INCREMENTAL_FILE")

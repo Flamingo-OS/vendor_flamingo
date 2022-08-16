@@ -1,4 +1,4 @@
-#!/usr/bin/env kotlin
+#!/home2/npv12/kotlinc/bin/kotlin
 
 @file:Repository("https://repo.maven.apache.org/maven2/")
 @file:DependsOn("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.1")
