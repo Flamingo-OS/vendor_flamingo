@@ -428,8 +428,8 @@ function reposync() {
 }
 
 function keygen() {
-    local certs_dir=${ANDROID_BUILD_TOP}/certs
-    [ -z "$1" ] || certs_dir=$1
+    local certs_dir="${ANDROID_BUILD_TOP}/certs"
+    [ -z "$1" ] || certs_dir="$1"
     rm -rf "$certs_dir"
     mkdir -p "$certs_dir"
     local subject
@@ -440,7 +440,8 @@ function keygen() {
         read -r val
         subject+="/$entry=$val"
     done
-    for key in releasekey platform shared media networkstack testkey; do
+    local keys=( releasekey platform shared media networkstack testkey sdk_sandbox bluetooth )
+    for key in ${keys[@]}; do
         ./development/tools/make_key "$certs_dir"/$key "$subject"
     done
 }
