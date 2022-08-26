@@ -109,8 +109,6 @@ PRODUCT_PACKAGES += \
 ifneq ($(GAPPS_BUILD),true)
 
 PRODUCT_PACKAGES += \
-    Apps \
-    GmsCompat \
     libjni_latinime \
     libjni_latinimegoogle
 
