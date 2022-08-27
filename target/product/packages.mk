@@ -32,7 +32,7 @@ PRODUCT_PACKAGES += \
     ThemePicker
 
 # Lawnchair
-TARGET_BUILD_LAWNCHAIR ?= true
+TARGET_BUILD_LAWNCHAIR ?= false
 ifeq ($(strip $(TARGET_BUILD_LAWNCHAIR)),true)
 	include vendor/lawnchair/lawnchair.mk
 endif
