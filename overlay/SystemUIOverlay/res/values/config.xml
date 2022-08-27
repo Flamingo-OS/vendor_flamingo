@@ -27,7 +27,4 @@
          increase the rate of unintentional unlocks. -->
     <bool name="config_lockscreenAntiFalsingClassifierEnabled">false</bool>
 
-    <!-- SystemUIFactory component -->
-    <string name="config_systemUIFactoryComponent" translatable="false">com.flamingo.systemui.FlamingoSystemUIFactory</string>
-
 </resources>
