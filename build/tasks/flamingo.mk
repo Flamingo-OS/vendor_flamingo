@@ -15,8 +15,39 @@
 
 FLAMINGO_OTA := $(PRODUCT_OUT)/$(FLAMINGO_OTA_PACKAGE_NAME).zip
 
-$(FLAMINGO_OTA): $(BUILT_TARGET_FILES_PACKAGE) $(OTA_FROM_TARGET_FILES)
-	$(call build-ota-package-target,$@,-k $(DEFAULT_KEY_CERT_PAIR) --output_metadata_path $(INTERNAL_OTA_METADATA))
+intermediates_dir := $(call intermediates-dir-for,PACKAGING,target_files)
+GENERATED_TARGET_FILES_PACKAGE := $(intermediates_dir)/generated-$(TARGET_PRODUCT)-target_files-$(FILE_NAME_TAG).zip
+
+CERTS_DIR ?= certs
+ifneq ($(wildcard $(CERTS_DIR)/releasekey.*),)
+SIGNING_KEY := $(CERTS_DIR)/releasekey
+else
+
+ifeq ($(OFFICIAL_BUILD),true)
+$(error "Official builds must be signed with release keys, run keygen to generate signing keys")
+endif
+
+endif
+
+SIGN_TARGET_FILES_APKS := $(HOST_OUT_EXECUTABLES)/sign_target_files_apks$(HOST_EXECUTABLE_SUFFIX)
+$(GENERATED_TARGET_FILES_PACKAGE): $(BUILT_TARGET_FILES_PACKAGE) $(SIGN_TARGET_FILES_APKS)
+	if [ -n "$(SIGNING_KEY)" ] ; then \
+		$(SIGN_TARGET_FILES_APKS) -o \
+			--default_key_mappings $(CERTS_DIR) \
+			$(BUILT_TARGET_FILES_PACKAGE) $@; \
+		rm -rf $(BUILT_TARGET_FILES_PACKAGE); \
+	else \
+		mv $(BUILT_TARGET_FILES_PACKAGE) $@; \
+	fi
+
+SIGNING_KEY ?= build/make/target/product/security/testkey
+
+$(FLAMINGO_OTA): $(GENERATED_TARGET_FILES_PACKAGE) $(OTA_FROM_TARGET_FILES)
+	$(OTA_FROM_TARGET_FILES) \
+		--block \
+		-p $(SOONG_HOST_OUT) \
+		-k $(SIGNING_KEY) \
+		$(GENERATED_TARGET_FILES_PACKAGE) $@
 
 .PHONY: flamingo
 flamingo: $(FLAMINGO_OTA)
@@ -26,13 +57,13 @@ flamingo: $(FLAMINGO_OTA)
 ifneq ($(strip $(PREVIOUS_TARGET_FILES_PACKAGE)),)
 FLAMINGO_INCREMENTAL_OTA := $(PRODUCT_OUT)/$(FLAMINGO_OTA_PACKAGE_NAME)-incremental.zip
 
-$(FLAMINGO_INCREMENTAL_OTA): $(BUILT_TARGET_FILES_PACKAGE) $(OTA_FROM_TARGET_FILES)
+$(FLAMINGO_INCREMENTAL_OTA): $(GENERATED_TARGET_FILES_PACKAGE) $(OTA_FROM_TARGET_FILES)
 	$(OTA_FROM_TARGET_FILES) \
 	--block \
 	-p $(SOONG_HOST_OUT) \
-	-k $(DEFAULT_KEY_CERT_PAIR) \
+	-k $(SIGNING_KEY) \
 	-i $(PREVIOUS_TARGET_FILES_PACKAGE) \
-	$(BUILT_TARGET_FILES_PACKAGE) $@
+	$(GENERATED_TARGET_FILES_PACKAGE) $@
 
 .PHONY: flamingo-incremental
 flamingo-incremental: $(FLAMINGO_INCREMENTAL_OTA)
@@ -42,9 +73,9 @@ endif
 
 FLAMINGO_FASTBOOT_PACKAGE := $(PRODUCT_OUT)/$(FLAMINGO_OTA_PACKAGE_NAME)-fastboot.zip
 
-$(FLAMINGO_FASTBOOT_PACKAGE): $(BUILT_TARGET_FILES_PACKAGE) $(IMG_FROM_TARGET_FILES)
+$(FLAMINGO_FASTBOOT_PACKAGE): $(GENERATED_TARGET_FILES_PACKAGE) $(IMG_FROM_TARGET_FILES)
 	$(IMG_FROM_TARGET_FILES) \
-	$(BUILT_TARGET_FILES_PACKAGE) $@
+	$(GENERATED_TARGET_FILES_PACKAGE) $@
 
 .PHONY: flamingo-fastboot
 flamingo-fastboot: $(FLAMINGO_FASTBOOT_PACKAGE)
@@ -52,7 +83,7 @@ flamingo-fastboot: $(FLAMINGO_FASTBOOT_PACKAGE)
 	@echo "Flamingo fastboot package is ready"
 
 .PHONY: flamingo-boot
-flamingo-boot: $(BUILT_TARGET_FILES_PACKAGE)
-	$(hide) cp $(call intermediates-dir-for,PACKAGING,target_files)/*/IMAGES/boot.img \
+flamingo-boot: $(GENERATED_TARGET_FILES_PACKAGE)
+	$(hide) cp <(unzip -o -q -p $(GENERATED_TARGET_FILES_PACKAGE) IMAGES/boot.img) \
 		$(FLAMINGO_OUT)/$(FLAMINGO_OTA_PACKAGE_NAME)-$(shell date "+%Y%m%d-%H%M")-boot.img
 	@echo "Boot image copied"

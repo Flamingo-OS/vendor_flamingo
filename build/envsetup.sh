@@ -217,7 +217,7 @@ function launch() {
     local targets=("flamingo")
     local previousTargetFile
     if [ -n "$targetFilesDir" ]; then
-        previousTargetFile=$(find "$targetFilesDir" -type f -name "*target_files*.zip" | sort -n | tail -n 1)
+        previousTargetFile=$(find "$targetFilesDir" -type f -name "generated*target_files*.zip" | sort -n | tail -n 1)
         if [ -n "$previousTargetFile" ]; then
             incremental=true
             if $buildBothTargets; then
@@ -280,7 +280,7 @@ function __zip_append_timestamp() {
 
 function __copy_new_target_files() {
     local newTargetFile
-    newTargetFile=$(find "$OUT" -type f -name "*target_files*.zip" -print -quit)
+    newTargetFile=$(find "$OUT" -type f -name "generated*target_files*.zip" -print -quit)
     if [ -z "$newTargetFile" ]; then
         return 1
     fi
