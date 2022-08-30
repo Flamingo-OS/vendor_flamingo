@@ -146,4 +146,7 @@
     <!-- System-provided radius for inner views on app widgets. The resolved value of this resource may change at runtime. -->
     <dimen name="system_app_widget_inner_radius">20dp</dimen>
 
+    <!-- The duration in which a recent task is considered in session and should be visible. -->
+    <integer name="config_activeTaskDurationHours">12</integer>
+
 </resources>
