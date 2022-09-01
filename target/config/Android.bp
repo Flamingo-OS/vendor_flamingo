@@ -13,14 +13,6 @@
 // limitations under the License.
 
 prebuilt_etc {
-    name: "privapp_additional_whitelist_systemui",
-    system_ext_specific: true,
-    sub_dir: "permissions",
-    src: "permissions/privapp-permissions-systemui.xml",
-    filename: "flamingo-privapp-permissions-systemui.xml"
-}
-
-prebuilt_etc {
     name: "privapp_additional_whitelist_settings",
     system_ext_specific: true,
     sub_dir: "permissions",
