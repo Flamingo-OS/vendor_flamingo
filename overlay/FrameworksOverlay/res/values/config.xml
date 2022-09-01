@@ -149,4 +149,11 @@
     <!-- The duration in which a recent task is considered in session and should be visible. -->
     <integer name="config_activeTaskDurationHours">12</integer>
 
+    <!-- Minimum color temperature, in Kelvin, supported by Night display. -->
+    <integer name="config_nightDisplayColorTemperatureMin">1600</integer>
+
+    <!-- Default color temperature, in Kelvin, to tint the screen when Night display is
+         activated. -->
+    <integer name="config_nightDisplayColorTemperatureDefault">2650</integer>
+
 </resources>
