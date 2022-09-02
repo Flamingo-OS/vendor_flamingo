@@ -13,6 +13,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+ifneq ($(wildcard certs/releasekey.*),)
+SIGNING_KEYS := certs/releasekey
+endif
+
+ifeq ($(strip $(OFFICIAL_BUILD)),true)
+    ifeq ($(strip $(SIGNING_KEYS)),)
+        $(error "Official builds must be signed with release keys, run keygen to generate signing keys")
+    endif
+endif
+
+SIGNING_KEYS ?= $(DEFAULT_KEY_CERT_PAIR)
+
+PRODUCT_DEFAULT_DEV_CERTIFICATE := $(SIGNING_KEYS)
+PRODUCT_OTA_PUBLIC_KEYS := $(PRODUCT_DEFAULT_DEV_CERTIFICATE)
+
 # Versioning.
 $(call inherit-product, vendor/flamingo/target/product/version.mk)
 
