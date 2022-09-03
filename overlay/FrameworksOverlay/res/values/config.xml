@@ -156,4 +156,7 @@
          activated. -->
     <integer name="config_nightDisplayColorTemperatureDefault">2650</integer>
 
+    <!-- Whether or not we should show the option to show battery percentage -->
+    <bool name="config_battery_percentage_setting_available">false</bool>
+
 </resources>
