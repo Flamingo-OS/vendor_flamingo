@@ -159,4 +159,14 @@
     <!-- Whether or not we should show the option to show battery percentage -->
     <bool name="config_battery_percentage_setting_available">false</bool>
 
+    <!-- List of system packages to exempted from location privacy indicator -->
+    <string-array name="config_systemLocationWhitelistedPackages" translatable="false">
+        <item>com.android.bluetooth</item>
+        <item>com.android.cellbroadcastservice</item>
+        <item>com.android.location.fused</item>
+        <item>com.android.phone</item>
+        <item>com.android.printspooler</item>
+        <item>com.qualcomm.qti.cne</item>
+    </string-array>
+
 </resources>
