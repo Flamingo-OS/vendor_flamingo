@@ -13,14 +13,6 @@
 // limitations under the License.
 
 prebuilt_etc {
-    name: "privapp_additional_whitelist_settings",
-    system_ext_specific: true,
-    sub_dir: "permissions",
-    src: "permissions/privapp-permissions-settings.xml",
-    filename: "flamingo-privapp-permissions-settings.xml"
-}
-
-prebuilt_etc {
     name: "privapp_additional_whitelist_hotword",
     product_specific: true,
     sub_dir: "permissions",
