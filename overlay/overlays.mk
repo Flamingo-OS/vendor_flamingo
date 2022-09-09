@@ -28,6 +28,7 @@ ifneq ($(GAPPS_BUILD),true)
 
 PRODUCT_PACKAGES += \
     VanillaFrameworksOverlay \
+    VanillaSettingsOverlay \
     LatinIMEOverlay
 
 endif
