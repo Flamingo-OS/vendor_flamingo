@@ -32,7 +32,7 @@ DEBUG = False
 default_manifest = ".repo/manifest.xml"
 
 custom_local_manifest = ".repo/local_manifests/device_manifest.xml"
-custom_default_revision = "A12.1"
+custom_default_revision = "A13"
 custom_dependencies = "flamingo.dependencies"
 org_manifest = "flamingo-devices"  # leave empty if org is provided in manifest
 org_display = "FlamingoOS-devices"  # needed for displaying

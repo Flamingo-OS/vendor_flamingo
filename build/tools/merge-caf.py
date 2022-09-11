@@ -45,7 +45,7 @@ WORKING_DIR = "{0}/../../../..".format(os.path.dirname(os.path.realpath(__file__
 MANIFEST_NAME = "flamingo.xml"
 REPOS_TO_MERGE = {}
 REPOS_RESULTS = {}
-BRANCH_NAME = "A12.1"
+BRANCH_NAME = "A13"
 
 
 # useful helpers
