@@ -62,6 +62,8 @@ Flamingo OS specific functions:
 - reposync:   Sync repo with with some additional flags
 - fetchrepos: Set up local_manifest for device and fetch the repos set in device/<vendor>/<codename>/flamingo.dependencies
               Usage: fetchrepos <device>
+- mergecaf: Merge in a newer caf tag across the source
+              usage: mergecaf <caf tag>
 - keygen:     Generate keys for signing builds.
               Usage: keygen <dir>
               Default output dir is ${ANDROID_BUILD_TOP}/certs
@@ -88,7 +90,19 @@ function fetchrepos() {
         __print_error "Python3 is not installed"
         return 1
     fi
-    $(which python3) vendor/flamingo/build/tools/roomservice.py "$1"
+    $(which python3) vendor/flamingo/scripts/roomservice.py "$1"
+}
+
+function mergecaf() {
+    if [ -z "$1" ]; then
+        __print_error "Provide a caf tag"
+        return 1
+    fi
+    if ! command -v python3 &>/dev/null; then
+        __print_error "Python3 is not installed"
+        return 1
+    fi
+    $(which python3) vendor/flamingo/scripts/merge-caf.py "$1"
 }
 
 function launch() {
