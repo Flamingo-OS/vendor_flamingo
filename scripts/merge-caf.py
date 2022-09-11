@@ -173,6 +173,7 @@ def merge_manifest(is_system, branch):
             elif not is_system and elem.attrib["name"] == "clo_vendor":
                 remote = elem
                 break
+        
         remote.set("revision", branch)
         tree.write("{0}/.repo/manifests/default.xml".format(WORKING_DIR))
         cpu_count = str(os.cpu_count())
@@ -327,14 +328,16 @@ def main():
 
     is_system = "LA.QSSI" in branch
     repo_lst, default_repos = get_manual_repos(args, is_system)
-    if repo_lst is None and default_repos is None:
-        return
-    if len(repo_lst) == 0:
+    if repo_lst:
+        force_sync(repo_lst)
+        merge(repo_lst, branch)
+        os.chdir(WORKING_DIR)
+        print_results(branch)
+    elif default_repos:
         read_custom_manifest(default_repos)
         if args.dry_run:
             print(list(REPOS_TO_MERGE.keys()))
-            quit()
-        if REPOS_TO_MERGE:
+        elif REPOS_TO_MERGE:
             if args.merge_manifest:
                 merge_manifest(is_system, branch)
             if not args.no_sync:
@@ -344,11 +347,6 @@ def main():
             print_results(branch)
         else:
             print("No repos to sync")
-    else:
-        force_sync(repo_lst)
-        merge(repo_lst, branch)
-        os.chdir(WORKING_DIR)
-        print_results(branch)
 
     if(args.push_repos):
         push_repos()
