@@ -97,5 +97,8 @@ $(call inherit-product, vendor/themes/common.mk)
 # Inherit from lineage hidl repo
 $(call inherit-product-if-exists, hardware/lineage/interfaces/config.mk)
 
+# Inherit audio files
+$(call inherit-product-if-exists, vendor/prebuilts/audio/AudioPackage.mk)
+
 # BootAnimation
 include vendor/flamingo/target/config/bootanimation.mk

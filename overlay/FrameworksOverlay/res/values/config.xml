@@ -169,4 +169,10 @@
         <item>com.qualcomm.qti.cne</item>
     </string-array>
 
+        <!-- URI for in call notification sound -->
+    <string translatable="false" name="config_inCallNotificationSound">/product/media/audio/ui/FlamingoInCallNotification.ogg</string>
+
+    <!-- URI for camera shutter sound -->
+    <string translatable="false" name="config_cameraShutterSound">/product/media/audio/ui/Flamingo_camera_click.ogg</string>
+
 </resources>
