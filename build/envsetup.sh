@@ -307,7 +307,7 @@ function __copy_new_target_files() {
 
 function gen_json() {
     croot
-    local GIT_BRANCH="A12.1"
+    local REVISION="A13"
     local outDir="$OUT"
     local incremental=false
     local bothTargetsExist=false
@@ -383,7 +383,7 @@ function gen_json() {
     local DATE
     DATE=$(($(get_prop_value ro.build.date.utc) * 1000))
 
-    local PRIMARY_URL="https://downloads.e11z.net/d/flamingo/$GIT_BRANCH/$FLAMINGO_BUILD/$FLAVOR"
+    local PRIMARY_URL="https://downloads.e11z.net/d/flamingo/$REVISION/$FLAMINGO_BUILD/$FLAVOR"
 
     local INCREMENTAL_NAME
     INCREMENTAL_NAME=$(basename "$INCREMENTAL_FILE")
