@@ -243,6 +243,15 @@ def push_repos():
         except:
             print(f"Failed to push {repo_dir}")
 
+    try:
+        print("Pushing manifest")
+        repo = Repo(f"{WORKING_DIR}/.repo/manifests")
+        origin = repo.remote(name="origin")
+        assert origin.exists()
+        origin.push(f'HEAD:{BRANCH_NAME}').raise_if_error()
+    except:
+        print("Failed to push the manifest")
+
 def bump_version():
     """
     Bump FLAMINGO_VERSION_MINOR whenever a new SPL is merged
