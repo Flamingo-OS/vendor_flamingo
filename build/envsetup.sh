@@ -102,7 +102,7 @@ function mergecaf() {
         __print_error "Python3 is not installed"
         return 1
     fi
-    $(which python3) vendor/flamingo/scripts/merge-caf.py "$1"
+    $(which python3) vendor/flamingo/scripts/merge-caf.py "$@"
 }
 
 function launch() {
