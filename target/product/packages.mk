@@ -119,3 +119,7 @@ endif
 # Stk
 PRODUCT_PACKAGES += \
     Stk
+
+# WebView
+PRODUCT_PACKAGES += \
+    AndroidSystemWebView \
