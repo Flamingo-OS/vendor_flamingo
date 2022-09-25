@@ -123,3 +123,7 @@ PRODUCT_PACKAGES += \
 # WebView
 PRODUCT_PACKAGES += \
     AndroidSystemWebView \
+
+# Chromium
+PRODUCT_PACKAGES += \
+   Chromium
