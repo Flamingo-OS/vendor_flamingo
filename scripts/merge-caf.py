@@ -246,20 +246,26 @@ def print_results(branch):
     elif not REPOS_RESULTS["Failures"] and not REPOS_RESULTS["Successes"]:
         print("Unable to retrieve any results")
 
+def push_repo(repo_dir):
+    """Push a single repo"""
+    try:
+        print(f"Pushing {repo_dir}")
+        repo = Repo(f"{WORKING_DIR}/{repo_dir}")
+        origin = repo.remote(name='flamingo')
+        assert origin.exists()
+        origin.push(f'HEAD:{BRANCH_NAME}').raise_if_error()   
+    except:
+        print(f"Failed to push {repo_dir}")
 
-def push_repos():
+def push_all_repos():
     """
     Push all the merged repos to our git
     """
-    for repo_dir in REPOS_RESULTS["Successes"]:
-        try:
-            print(f"Pushing {repo_dir}")
-            repo = Repo(f"{WORKING_DIR}/{repo_dir}")
-            origin = repo.remote(name='flamingo')
-            assert origin.exists()
-            origin.push(f'HEAD:{BRANCH_NAME}').raise_if_error()   
-        except:
-            print(f"Failed to push {repo_dir}")
+    threads_number = multiprocessing.cpu_count() * 2
+    executor = concurrent.futures.ProcessPoolExecutor(threads_number)
+    futures = [executor.submit(push_repo, repo) 
+        for repo in REPOS_RESULTS["Successes"]]
+    concurrent.futures.wait(futures)      
 
     try:
         print("Pushing manifest")
@@ -333,7 +339,7 @@ def main():
     )
     parser.add_argument(
         "--push",
-        dest="push_repos",
+        dest="push_all_repos",
         action="store_true",
         help="Push all your merged repos after testing"
     )
@@ -375,8 +381,8 @@ def main():
         else:
             print("No repos to sync")
 
-    if(args.push_repos):
-        push_repos()
+    if(args.push_all_repos):
+        push_all_repos()
 
     if(args.bump_version):
         bump_version()
