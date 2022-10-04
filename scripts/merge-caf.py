@@ -33,6 +33,7 @@ import argparse
 import concurrent.futures
 import os
 import glob
+import multiprocessing
 import re
 import shutil
 import subprocess
@@ -161,7 +162,8 @@ def merge(repo_lst, branch):
     failures = []
     successes = [] 
 
-    executor = concurrent.futures.ProcessPoolExecutor(10)
+    threads_number = multiprocessing.cpu_count() * 2
+    executor = concurrent.futures.ProcessPoolExecutor(threads_number)
     futures = [executor.submit(repo_merge, repo, branch, repo_lst) 
         for repo in repo_lst]
     for future in concurrent.futures.as_completed(futures): 
