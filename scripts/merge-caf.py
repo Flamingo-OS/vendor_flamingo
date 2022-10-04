@@ -31,6 +31,7 @@ Merge script for Flamingo OS. All thanks to AOSPA
 
 import argparse
 import os
+import glob
 import re
 import shutil
 import subprocess
@@ -98,11 +99,12 @@ def read_custom_manifest(default_repos):
     project_repos = []
     reversed_default = {value: key for key, value in default_repos.items()}
 
-    with open("{0}/.repo/manifests/remove.xml".format(WORKING_DIR)) as remove_manifest:
-        root = Et.parse(remove_manifest).getroot()
-        for repo in root:
-            if repo.tag == "remove-project":
-                removed_repos.append(repo.get("name"))
+    for file in glob.glob(f"{WORKING_DIR}/.repo/manifests/*.xml"):
+        with open(file) as remove_manifest:
+            root = Et.parse(remove_manifest).getroot()
+            for repo in root:
+                if repo.tag == "remove-project":
+                    removed_repos.append(repo.get("name"))
 
     with open("{0}/.repo/manifests/{1}".format(WORKING_DIR, MANIFEST_NAME)) as manifest:
         root = Et.parse(manifest).getroot()
