@@ -30,6 +30,7 @@ Merge script for Flamingo OS. All thanks to AOSPA
 """
 
 import argparse
+import concurrent.futures
 import os
 import glob
 import re
@@ -142,21 +143,34 @@ def force_sync(repo_lst):
         check=False,
     )
 
+def repo_merge(repo, branch, repo_lst):
+    """Merge in a specific repo"""
+    print("Merging " + repo)
+    os.chdir("{0}/{1}".format(WORKING_DIR, repo))
+    try:
+        git.cmd.Git().pull("{}{}".format(BASE_URL, repo_lst[repo]), branch)
+        if check_actual_merged_repo(repo, branch):
+            return (repo, True)
+    except GitCommandError as git_error:
+        print(git_error)
+        return (repo, False)
+
 
 def merge(repo_lst, branch):
     """ Merges the necessary repos and lists if a repo succeeds or fails """
     failures = []
-    successes = []
-    for repo in repo_lst:
-        print("Merging " + repo)
-        os.chdir("{0}/{1}".format(WORKING_DIR, repo))
-        try:
-            git.cmd.Git().pull("{}{}".format(BASE_URL, repo_lst[repo]), branch)
-            if check_actual_merged_repo(repo, branch):
-                successes.append(repo)
-        except GitCommandError as git_error:
-            print(git_error)
-            failures.append(repo)
+    successes = [] 
+
+    executor = concurrent.futures.ProcessPoolExecutor(10)
+    futures = [executor.submit(repo_merge, repo, branch, repo_lst) 
+        for repo in repo_lst]
+    for future in concurrent.futures.as_completed(futures): 
+        result = future.result()
+        if result is not None:
+            if result[1]:
+                successes.append(result[0])
+            else:
+                failures.append(result[0])
 
     REPOS_RESULTS.update({"Successes": successes, "Failures": failures})
 
