@@ -94,15 +94,7 @@ function fetchrepos() {
 }
 
 function mergecaf() {
-    if [ -z "$1" ]; then
-        __print_error "Provide a caf tag"
-        return 1
-    fi
-    if ! command -v python3 &>/dev/null; then
-        __print_error "Python3 is not installed"
-        return 1
-    fi
-    $(which python3) vendor/flamingo/scripts/merge-caf.py "$@"
+    cargo run -qr --manifest-path vendor/flamingo/scripts/manifest_merger/Cargo.toml -- $*
 }
 
 function launch() {
