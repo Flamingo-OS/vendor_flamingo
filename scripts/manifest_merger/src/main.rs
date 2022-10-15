@@ -15,7 +15,7 @@
  */
 
 use clap::Parser;
-use errors::error;
+use git2::Repository;
 use manifest::Manifest;
 use regex::Regex;
 use reqwest::Client;
@@ -23,36 +23,27 @@ use std::fs;
 use std::option::Option;
 use std::process;
 
-use crate::{
-    manifest::{update_default_manifest, update_manifests},
-    merge::merge_upstream,
-};
-
-mod errors;
+mod git;
+#[macro_use]
+mod macros;
 mod manifest;
 mod merge;
-
-const ATTR_NAME: &str = "name";
-const ATTR_PATH: &str = "path";
 
 const VERSION_FILE_PATH: &str = "vendor/flamingo/target/product/version.mk";
 const MAJOR_VERSION_STR: &str = "FLAMINGO_VERSION_MAJOR";
 const MINOR_VERSION_STR: &str = "FLAMINGO_VERSION_MINOR";
 
-struct Version {
-    major: usize,
-    minor: usize,
-}
+const MANIFEST_REMOTE_NAME: &str = "flamingo";
+const MANIFEST_REMOTE_URL: &str = "ssh://git@github.com/Flamingo-OS/manifest";
 
-#[derive(Parser, Debug)]
-#[command(version)]
+#[derive(Parser)]
 struct Args {
     /// Source directory of the rom
-    #[arg(long, default_value_t = format!("./"))]
+    #[arg(long, default_value_t = String::from("./"))]
     source_dir: String,
 
     /// Location of the manifest dir
-    #[arg(short, long, default_value_t = format!("./.repo/manifests"))]
+    #[arg(short, long, default_value_t = String::from("./.repo/manifests"))]
     mainfest_dir: String,
 
     /// CLO system tag that should be merged across the rom
@@ -64,7 +55,7 @@ struct Args {
     vendor_tag: Option<String>,
 
     /// Number of threads to use.
-    #[arg(short, long, default_value_t = num_cpus::get() * 2)]
+    #[arg(short, long, default_value_t = num_cpus::get())]
     threads: usize,
 
     /// Whether to push the changes to the remote
@@ -81,30 +72,30 @@ async fn main() {
     let args = Args::parse();
 
     if !args.system_tag.is_some() && !args.vendor_tag.is_some() {
-        error("No tags specified. Specify atleast one of -s or -v");
+        error!("No tags specified. Specify atleast one of -s or -v");
         process::exit(1);
     }
 
     let system_manifest = args
         .system_tag
-        .map(|tag| Manifest::new(args.mainfest_dir.clone(), "system", Some(tag)));
+        .map(|tag| Manifest::new(&args.mainfest_dir, "system", Some(tag)));
     let vendor_manifest = args
         .vendor_tag
-        .map(|tag| Manifest::new(args.mainfest_dir.clone(), "vendor", Some(tag)));
+        .map(|tag| Manifest::new(&args.mainfest_dir, "vendor", Some(tag)));
 
     let client = Client::new();
 
     futures::join!(
-        update_manifests(client.clone(), &system_manifest),
-        update_manifests(client.clone(), &vendor_manifest)
+        manifest::update(&client, &system_manifest),
+        manifest::update(&client, &vendor_manifest)
     );
 
-    let default_manifest = Manifest::new(args.mainfest_dir.clone(), "default", None);
-    update_default_manifest(default_manifest, &system_manifest, &vendor_manifest);
+    let default_manifest = Manifest::new(&args.mainfest_dir, "default", None);
+    manifest::update_default(default_manifest, &system_manifest, &vendor_manifest);
 
-    let flamingo_manifest = Manifest::new(args.mainfest_dir.clone(), "flamingo", None);
-    merge_upstream(
-        args.source_dir.clone(),
+    let flamingo_manifest = Manifest::new(&args.mainfest_dir, "flamingo", None);
+    merge::merge_upstream(
+        &args.source_dir,
         flamingo_manifest,
         &system_manifest,
         &vendor_manifest,
@@ -112,31 +103,50 @@ async fn main() {
         args.push,
     );
 
+    // Push manifest repo if everything went well.
+    if args.push {
+        match Repository::open(&args.mainfest_dir) {
+            Ok(repo) => {
+                let result =
+                    git::get_or_create_remote(&repo, MANIFEST_REMOTE_NAME, MANIFEST_REMOTE_URL);
+                if let Err(err) = result {
+                    error_exit!("{}", err);
+                }
+                if let Err(err) = git::push(&repo, MANIFEST_REMOTE_NAME) {
+                    error_exit!("failed to push manifest: {err}");
+                }
+            }
+            Err(err) => {
+                error_exit!("failed to open manifest repository: {err}");
+            }
+        }
+    }
+
     if args.set_version.is_some() {
         let version = args.set_version.unwrap();
-        let mut vers = version.split('.');
-        let version = Version {
-            major: vers.nth(0).unwrap().parse().unwrap(),
-            minor: vers.nth(1).unwrap().parse().unwrap(),
-        };
-        set_version(version, args.source_dir.clone());
+        let mut version_itr = version.split('.');
+        set_version(
+            version_itr.next().unwrap().parse().unwrap(),
+            version_itr.next().unwrap().parse().unwrap(),
+            &args.source_dir,
+        );
     }
 }
 
-fn set_version(version: Version, source: String) {
+fn set_version(major_version: usize, minor_version: usize, source: &str) {
     let file = format!("{source}/{VERSION_FILE_PATH}");
-    let version_file_content = fs::read_to_string(&file).expect("Failed to open version file");
+    let version_file_content = fs::read_to_string(&file).expect("Failed to read version file");
 
     let regex = Regex::new(r"FLAMINGO_VERSION_MAJOR\s:=\s\d+").unwrap();
     let version_file_content = regex.replace(
         &version_file_content,
-        format!("{} := {}", MAJOR_VERSION_STR, version.major),
+        format!("{} := {}", MAJOR_VERSION_STR, major_version),
     );
 
     let regex = Regex::new(r"FLAMINGO_VERSION_MINOR\s:=\s\d+").unwrap();
     let version_file_content = regex.replace(
         &version_file_content,
-        format!("{} := {}", MINOR_VERSION_STR, version.minor),
+        format!("{} := {}", MINOR_VERSION_STR, minor_version),
     );
 
     fs::write(file, version_file_content.to_string()).expect("Failed to set version");

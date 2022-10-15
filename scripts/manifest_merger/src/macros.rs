@@ -14,15 +14,23 @@
  * limitations under the License.
  */
 
-use std::process;
-
-use colored::Colorize;
-
-pub fn error(msg: &str) {
-    eprintln!("{}", format!("Error: {msg}").red());
+#[macro_export]
+macro_rules! error {
+    ( $( $arg:expr ),* ) => {
+        {
+            let fmt_str = format!("Error: {}", format!($($arg),*));
+            let colored_str = colored::Colorize::red(fmt_str.as_str());
+            eprintln!("{colored_str}");
+        }
+    };
 }
 
-pub fn error_and_exit(msg: &str) {
-    error(msg);
-    process::exit(1);
+#[macro_export]
+macro_rules! error_exit {
+    ( $( $arg:expr ),* ) => {
+        {
+            $crate::error!($($arg),*);
+            std::process::exit(1)
+        }
+    };
 }

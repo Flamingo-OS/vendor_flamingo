@@ -14,11 +14,8 @@
  * limitations under the License.
  */
 
-use std::fmt::Display;
-use std::fmt::Formatter;
-use std::fmt::Result as FmtResult;
-use std::fs::File;
-use std::fs::OpenOptions;
+use std::collections::HashMap;
+use std::fs::{File, OpenOptions};
 
 use reqwest::Client;
 use std::collections::HashSet;
@@ -27,24 +24,17 @@ use std::option::Option;
 use std::vec::Vec;
 use xmltree::{Element, EmitterConfig, XMLNode};
 
-use crate::errors::error_and_exit;
-use crate::ATTR_NAME;
-use crate::ATTR_PATH;
-
 const ELEMENT_MANIFEST: &str = "manifest";
 const ELEMENT_PROJECT: &str = "project";
 
+const ATTR_NAME: &str = "name";
+const ATTR_PATH: &str = "path";
 const ATTR_REMOTE: &str = "remote";
 const ATTR_REVISION: &str = "revision";
 const ATTR_CLONE_DEPTH: &str = "clone-depth";
 
 const XML_INDENT: &str = "    ";
 
-pub trait ManifestFmt {
-    fn get_file(&self) -> File;
-}
-
-#[derive(Clone)]
 pub struct Manifest {
     name: String,
     path: String,
@@ -52,18 +42,23 @@ pub struct Manifest {
 }
 
 impl Manifest {
-    pub fn new(dir: String, name: &str, tag: Option<String>) -> Self {
+    pub fn new(dir: &str, name: &str, tag: Option<String>) -> Self {
         Self {
             name: name.to_string(),
             path: format!("{dir}/{name}.xml"),
-            tag
+            tag,
         }
+    }
+
+    pub fn get_name(&self) -> String {
+        format!("{}.xml", self.name)
     }
 
     pub fn get_url(&self) -> String {
         format!(
             "https://git.codelinaro.org/clo/la/la/{0}/manifest/-/raw/{1}/{1}.xml",
-            self.name, self.tag.clone().unwrap_or("".to_string())
+            self.name,
+            self.tag.as_ref().unwrap_or(&String::new())
         )
     }
 
@@ -72,22 +67,14 @@ impl Manifest {
     }
 
     pub fn get_remote_url(&self) -> String {
-        "https://git.codelinaro.org/clo/la".to_string()
+        String::from("https://git.codelinaro.org/clo/la")
     }
 
     pub fn get_revision(&self) -> String {
-        format!("refs/tags/{}", self.tag.clone().unwrap_or("".to_string()))
+        format!("refs/tags/{}", self.tag.as_ref().unwrap_or(&String::new()))
     }
-}
 
-impl Display for Manifest {
-    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-        write!(f, "{}.xml", self.name)
-    }
-}
-
-impl ManifestFmt for Manifest {
-    fn get_file(&self) -> File {
+    pub fn get_file(&self) -> File {
         OpenOptions::new()
             .read(true)
             .write(true)
@@ -96,35 +83,38 @@ impl ManifestFmt for Manifest {
     }
 }
 
-pub async fn update_manifests(client: Client, manifest: &Option<Manifest>) {
+pub async fn update(client: &Client, manifest: &Option<Manifest>) {
     let manifest = match manifest {
         Some(manifest) => manifest,
         None => return,
     };
-    let result = download_manifest(client, manifest).await;
+    let result = download_manifest(&client, manifest).await;
     match result {
         Ok(xml_manifest) => {
             let config = EmitterConfig::new()
                 .indent_string(XML_INDENT)
                 .perform_indent(true);
             if let Err(err) = xml_manifest.write_with_config(manifest.get_file(), config) {
-                error_and_exit(&format!("failed to write manifest: {}", err));
+                error_exit!("failed to write manifest: {}", err);
             }
         }
         Err(err) => {
-            error_and_exit(&format!("failed to get manifest: {}", err));
+            error_exit!("failed to get manifest: {}", err);
         }
     }
 }
 
-async fn download_manifest(client: Client, manifest: &Manifest) -> Result<Element, reqwest::Error> {
+async fn download_manifest(
+    client: &Client,
+    manifest: &Manifest,
+) -> Result<Element, reqwest::Error> {
     let response = client.get(manifest.get_url()).send().await?;
     if !response.status().is_success() {
-        error_and_exit(&format!(
+        error_exit!(
             "GET request to {0} failed. Status code = {1}",
             manifest.get_url(),
             response.status().as_str()
-        ));
+        );
     }
     let bytes = response.bytes().await.expect("Failed to get response body");
     let xml_manifest = Element::parse(&bytes[..]).expect("Failed to parse manifest");
@@ -137,13 +127,13 @@ async fn download_manifest(client: Client, manifest: &Manifest) -> Result<Elemen
 fn transform_manifest(manifest: Element, remote: &String) -> Element {
     // Filter child elements of <manifest></manifest>
     // Currently we only care about <project> elements.
-    let elements_to_keep = HashSet::from([String::from(ELEMENT_PROJECT)]);
+    let elements_to_keep = HashSet::from([ELEMENT_PROJECT.to_string()]);
 
     // Remove attributes from <project> elements.
     let attrs_to_keep = HashSet::from([
-        String::from(ATTR_CLONE_DEPTH),
-        String::from(ATTR_NAME),
-        String::from(ATTR_PATH),
+        ATTR_CLONE_DEPTH.to_string(),
+        ATTR_NAME.to_string(),
+        ATTR_PATH.to_string(),
     ]);
 
     // Shallow clone (clone-depth="1") some big repos by default
@@ -195,7 +185,7 @@ fn transform_manifest(manifest: Element, remote: &String) -> Element {
                 if should_shallow_clone {
                     filtered_element
                         .attributes
-                        .entry(String::from(ATTR_CLONE_DEPTH))
+                        .entry(ATTR_CLONE_DEPTH.to_string())
                         .or_insert(String::from("1"));
                 }
                 XMLNode::Element(filtered_element)
@@ -207,7 +197,7 @@ fn transform_manifest(manifest: Element, remote: &String) -> Element {
     transformed_manifest
 }
 
-pub fn read_manifest<T: Display + ManifestFmt>(manifest: &T) -> Result<Element, String> {
+fn read_manifest(manifest: &Manifest) -> Result<Element, String> {
     let mut bytes: Vec<u8> = Vec::new();
     let mut reader = BufReader::new(manifest.get_file());
     let read_result = reader.read_to_end(&mut bytes);
@@ -216,14 +206,35 @@ pub fn read_manifest<T: Display + ManifestFmt>(manifest: &T) -> Result<Element, 
             let parse_result = Element::parse(&bytes[..bytes_read]);
             match parse_result {
                 Ok(element) => Ok(element),
-                Err(err) => Err(format!("Failed to parse {manifest}: {err}")),
+                Err(err) => Err(format!("Failed to parse {}: {err}", manifest.get_name())),
             }
         }
-        Err(_) => Err(format!("Failed to read file {manifest}")),
+        Err(err) => Err(format!("Failed to read {}: {err}", manifest.get_name())),
     }
 }
 
-pub fn update_default_manifest(
+pub fn get_repos(manifest: &Manifest) -> Result<HashMap<String, String>, String> {
+    read_manifest(manifest).map(|manifest| {
+        manifest
+            .children
+            .iter()
+            .map(|node| node.as_element())
+            .filter(|element| element.is_some())
+            .map(|element| element.unwrap())
+            .filter(|element| {
+                element.attributes.contains_key(ATTR_PATH)
+                    && element.attributes.contains_key(ATTR_NAME)
+            })
+            .map(|element| {
+                let path = element.attributes.get(ATTR_PATH).unwrap().to_owned();
+                let name = element.attributes.get(ATTR_NAME).unwrap().to_owned();
+                (path, name)
+            })
+            .collect()
+    })
+}
+
+pub fn update_default(
     default_manifest: Manifest,
     system_manifest: &Option<Manifest>,
     vendor_manifest: &Option<Manifest>,
@@ -237,7 +248,7 @@ pub fn update_default_manifest(
                     .attributes
                     .get(ATTR_NAME)
                     .expect("Remote should have a name")
-                    .clone();
+                    .to_string();
                 elem.attributes
                     .entry(ATTR_REVISION.to_string())
                     .and_modify(|revision| {
