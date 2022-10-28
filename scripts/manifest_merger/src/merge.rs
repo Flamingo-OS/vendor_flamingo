@@ -118,7 +118,7 @@ fn merge_in_repo(merge_data: MergeData) {
             if !merge_data.push {
                 return;
             }
-            match git::push(&repo, &merge_data.repo_name) {
+            match git::push(&repo) {
                 Ok(_) => println!("Successfully pushed {}", &merge_data.repo_name),
                 Err(err) => error!("failed to push {} : {err}", &merge_data.repo_name),
             }
