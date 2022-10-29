@@ -131,7 +131,7 @@ fn update_manifest(
 ) {
     match Repository::open(mainfest_dir) {
         Ok(repo) => {
-            git::try_create_remote(&repo, MANIFEST_REMOTE_NAME, MANIFEST_REMOTE_URL).unwrap();
+            git::get_or_create_remote(&repo, MANIFEST_REMOTE_NAME, MANIFEST_REMOTE_URL).unwrap();
             let mut message = format!("manifest: upstream with clo\n");
             if let Some(tag) = system_tag {
                 message = format!("{message}\n* system tag: {tag}");

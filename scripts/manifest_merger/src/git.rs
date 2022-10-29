@@ -17,7 +17,6 @@
 use git2::{
     Cred, Error, ErrorCode, IndexAddOption, Oid, PushOptions, Remote, RemoteCallbacks, Repository,
 };
-use std::path::Path;
 
 const FLAMINGO_REMOTE: &str = "flamingo";
 const FLAMINGO_BRANCH: &str = "A13";
@@ -26,31 +25,14 @@ pub fn get_or_create_remote<'a>(
     repo: &'a Repository,
     name: &'a str,
     url: &'a str,
-) -> Result<Remote<'a>, String> {
+) -> Result<Remote<'a>, Error> {
     match repo.remote(name, url) {
         Ok(remote) => Ok(remote),
         Err(err) => {
             if err.code() == ErrorCode::Exists {
                 Ok(repo.find_remote(name).unwrap())
             } else {
-                Err(format!("failed to create remote {}: {err}", name))
-            }
-        }
-    }
-}
-
-pub fn try_create_remote<'a>(
-    repo: &'a Repository,
-    name: &'a str,
-    url: &'a str,
-) -> Result<(), String> {
-    match repo.remote(name, url) {
-        Ok(_) => Ok(()),
-        Err(err) => {
-            if err.code() == ErrorCode::Exists {
-                Ok(())
-            } else {
-                Err(format!("failed to create remote {}: {err}", name))
+                Err(err)
             }
         }
     }
@@ -62,9 +44,7 @@ pub fn add_and_commit(
     message: &str,
 ) -> Result<Oid, Error> {
     let mut index = repository.index()?;
-    let mut options = IndexAddOption::empty();
-    options.insert(IndexAddOption::DEFAULT);
-    index.add_all(&[pathspec], options, None)?;
+    index.add_all(&[pathspec], IndexAddOption::DEFAULT, None)?;
     let oid = index.write_tree()?;
     index.write()?;
     let signature = repository.signature()?;
