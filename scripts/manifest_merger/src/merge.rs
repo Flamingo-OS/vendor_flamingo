@@ -18,7 +18,7 @@ use crate::{
     git,
     manifest::{self, Manifest},
 };
-use git2::{Error, MergeOptions, Repository, build::CheckoutBuilder};
+use git2::{build::CheckoutBuilder, Error, MergeOptions, Repository, RepositoryState};
 use std::collections::HashMap;
 use std::option::Option;
 use threadpool::ThreadPool;
@@ -86,29 +86,44 @@ pub fn merge_upstream(
         })
         .filter(|merge_data| merge_data.is_some())
         .map(|merge_data| merge_data.unwrap())
-        .for_each(|merge_data| thread_pool.execute(|| {
-            let repo_name = merge_data.repo_name.to_string();
-            if let Err(err) = merge_in_repo(merge_data) {
-                error!("failed to merge in {repo_name}: {err}");
-            }
-        }));
+        .for_each(|merge_data| {
+            thread_pool.execute(|| {
+                let repo_name = merge_data.repo_name.to_string();
+                if let Err(err) = merge_in_repo(merge_data) {
+                    error!("failed to merge in {repo_name}: {err}");
+                }
+            })
+        });
     thread_pool.join();
 }
 
 fn merge_in_repo(merge_data: MergeData) -> Result<(), Error> {
     println!("Merging in {}", &merge_data.repo_name);
     let repo = Repository::open(&merge_data.repo_path)?;
-    let mut remote = git::get_or_create_remote(&repo, &merge_data.remote_name, &merge_data.remote_url)?;
+    let mut remote =
+        git::get_or_create_remote(&repo, &merge_data.remote_name, &merge_data.remote_url)?;
     remote.fetch(&[&merge_data.revision], None, None)?;
     let reference = repo.find_reference(&merge_data.revision)?;
     let annotated_commit = repo.reference_to_annotated_commit(&reference)?;
-    repo.merge(&[&annotated_commit], Some(&mut MergeOptions::default()), Some(&mut CheckoutBuilder::default()))?;
+    repo.merge(
+        &[&annotated_commit],
+        Some(&mut MergeOptions::default()),
+        Some(&mut CheckoutBuilder::default()),
+    )?;
     let mut index = repo.index()?;
     let oid = index.write_tree()?;
+    if repo.state() == RepositoryState::Clean {
+        println!("{} is already up-to-date", &merge_data.repo_name);
+        return Ok(());
+    }
     let signature = repo.signature()?;
     let parent_commit = repo.head()?.peel_to_commit()?;
     let tree = repo.find_tree(oid)?;
-    let message = format!("Merge tag \'{}\' of {} into HEAD", &merge_data.revision.split('/').last().unwrap(), remote.url().unwrap());
+    let message = format!(
+        "Merge tag \'{}\' of {} into HEAD",
+        &merge_data.revision.split('/').last().unwrap(),
+        remote.url().unwrap()
+    );
     repo.commit(
         Some("HEAD"),
         &signature,

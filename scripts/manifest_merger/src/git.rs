@@ -15,7 +15,8 @@
  */
 
 use git2::{
-    Cred, Error, ErrorCode, IndexAddOption, Oid, PushOptions, Remote, RemoteCallbacks, Repository,
+    Cred, Error, ErrorCode, IndexAddOption, PushOptions, Remote, RemoteCallbacks, Repository,
+    RepositoryState,
 };
 
 const FLAMINGO_REMOTE: &str = "flamingo";
@@ -38,26 +39,27 @@ pub fn get_or_create_remote<'a>(
     }
 }
 
-pub fn add_and_commit(
-    repository: &Repository,
-    pathspec: &str,
-    message: &str,
-) -> Result<Oid, Error> {
+pub fn add_and_commit(repository: &Repository, pathspec: &str, message: &str) -> Result<(), Error> {
     let mut index = repository.index()?;
     index.add_all(&[pathspec], IndexAddOption::DEFAULT, None)?;
     let oid = index.write_tree()?;
     index.write()?;
+    if repository.state() == RepositoryState::Clean {
+        return Ok(());
+    }
     let signature = repository.signature()?;
     let parent_commit = repository.head()?.peel_to_commit()?;
     let tree = repository.find_tree(oid)?;
-    repository.commit(
-        Some("HEAD"),
-        &signature,
-        &signature,
-        &message,
-        &tree,
-        &[&parent_commit],
-    )
+    repository
+        .commit(
+            Some("HEAD"),
+            &signature,
+            &signature,
+            &message,
+            &tree,
+            &[&parent_commit],
+        )
+        .map(|_| ())
 }
 
 fn get_repo_name(repository: &Repository) -> &str {
