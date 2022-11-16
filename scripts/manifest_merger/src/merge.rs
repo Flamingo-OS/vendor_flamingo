@@ -18,7 +18,9 @@ use crate::{
     git,
     manifest::{self, Manifest},
 };
-use git2::{build::CheckoutBuilder, Error, MergeOptions, Repository, RepositoryState};
+use git2::{
+    build::CheckoutBuilder, Error, IndexAddOption, MergeOptions, Repository, StatusOptions,
+};
 use std::collections::HashMap;
 use std::option::Option;
 use threadpool::ThreadPool;
@@ -111,8 +113,16 @@ fn merge_in_repo(merge_data: MergeData) -> Result<(), Error> {
         Some(&mut CheckoutBuilder::default()),
     )?;
     let mut index = repo.index()?;
+    if index.has_conflicts() {
+        return Err(Error::from_str(&format!(
+            "Repo {} has conflicts",
+            &merge_data.repo_name
+        )));
+    }
+    index.add_all(["*"].iter(), IndexAddOption::DEFAULT, None)?;
     let oid = index.write_tree()?;
-    if repo.state() == RepositoryState::Clean {
+    let statuses = repo.statuses(Some(&mut StatusOptions::default()))?;
+    if statuses.is_empty() {
         println!("{} is already up-to-date", &merge_data.repo_name);
         return Ok(());
     }
