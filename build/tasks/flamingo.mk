@@ -50,9 +50,3 @@ $(FLAMINGO_FASTBOOT_PACKAGE): $(BUILT_TARGET_FILES_PACKAGE) $(IMG_FROM_TARGET_FI
 flamingo-fastboot: $(FLAMINGO_FASTBOOT_PACKAGE)
 	$(hide) mv $(FLAMINGO_FASTBOOT_PACKAGE) $(FLAMINGO_OUT)/$(FLAMINGO_OTA_PACKAGE_NAME)-$(shell date "+%Y%m%d-%H%M")-fastboot.zip
 	@echo "Flamingo fastboot package is ready"
-
-.PHONY: flamingo-boot
-flamingo-boot: $(BUILT_TARGET_FILES_PACKAGE)
-	$(hide) cp $(call intermediates-dir-for,PACKAGING,target_files)/*/IMAGES/boot.img \
-		$(FLAMINGO_OUT)/$(FLAMINGO_OTA_PACKAGE_NAME)-$(shell date "+%Y%m%d-%H%M")-boot.img
-	@echo "Boot image copied"

@@ -45,7 +45,7 @@ Flamingo OS specific functions:
                          files if specified with -i option
                       [-j] to generate ota json for the device.
                       [-f] to generate fastboot zip
-                      [-b] to generate boot.img
+                      [--images] IMG1,IMG2.. to copy out specified images from generated target files.
                       [-o | --output-dir] to set the destination dir (relative) of generated ota zip file, boot.img and such
                       [-i | --incremental] to specify directory containing incremental update zip to generate an incremental update.
                          If the directory does not contain target files then default target is built, otherwise
@@ -104,12 +104,12 @@ function launch() {
     local installclean=false
     local json=false
     local fastbootZip=false
-    local bootImage=false
     local outputDir
     local incremental=false
     local buildBothTargets=false
     local targetFilesDir
     local wipeTargetFilesDir=false
+    local images=()
 
     local device="$1"
     shift # Remove device name from options
@@ -121,8 +121,8 @@ function launch() {
     variant=$1
     shift             # Remove build variant from options
     GAPPS_BUILD=false # Reset it here everytime
-    local SHORT="g,w,c,j,f,b,o:,i:"
-    local LONG="gapps,wipe,output-dir:,incremental:,build-both-targets"
+    local SHORT="g,w,c,j,f,o:,i:"
+    local LONG="gapps,wipe,output-dir:,incremental:,build-both-targets,images:"
     local OPTS
     if ! OPTS=$(getopt -a -n launch --options $SHORT --longoptions $LONG -- "$@"); then
         return 1
@@ -154,10 +154,6 @@ function launch() {
             fastbootZip=true
             shift
             ;;
-        -b)
-            bootImage=true
-            shift
-            ;;
         -o | --output-dir)
             outputDir="$2"
             shift 2
@@ -169,6 +165,10 @@ function launch() {
         --build-both-targets)
             buildBothTargets=true
             shift
+            ;;
+        --images)
+            IFS="," read -a images <<< "$2"
+            shift 2
             ;;
         --)
             shift
@@ -248,12 +248,16 @@ function launch() {
     if $fastbootZip; then
         targets+=("flamingo-fastboot")
     fi
-    if $bootImage; then
-        targets+=("flamingo-boot")
-    fi
 
     for target in "${targets[@]}"; do
         m "$target" || return 1
+    done
+
+    local export_dir=$(get_build_var FLAMINGO_OUT)
+    local img_prefix=$(get_build_var FLAMINGO_OTA_PACKAGE_NAME)
+    local intermediates_dir="$OUT/obj/PACKAGING/target_files_intermediates"
+    for img in "${images[@]}"; do
+        cp -f "$intermediates_dir"/*/IMAGES/"$img".img "$export_dir/$img_prefix-$(date +%Y%m%d-%H%M)-$img.img" || return 1
     done
 
     if [ -d "$targetFilesDir" ]; then
