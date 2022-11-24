@@ -43,7 +43,6 @@ Flamingo OS specific functions:
                       [-w | --wipe] to wipe out directory.
                       [-c] to do an install-clean. Also deletes contents of target files dir before copying new target
                          files if specified with -i option
-                      [-j] to generate ota json for the device.
                       [-f] to generate fastboot zip
                       [--images] IMG1,IMG2.. to copy out specified images from generated target files.
                       [-o | --output-dir] to set the destination dir (relative) of generated ota zip file, boot.img and such
@@ -52,11 +51,6 @@ Flamingo OS specific functions:
                          incremental target is built. New target files will be copied and replaced in this directory
                          for each build. Do note that this directory will be wiped before copying new files.
                       [--build-both-targets] to build full OTA along with an incremental OTA. Only works when [-i] is provided.
-- gen_json:   Generate ota json info.
-              Usage: gen_json [OPTIONS]
-                      [-i] true | false. Pass in true to create json for incremental OTA.
-                      [-b] true | false. Pass in true to create json for full OTA along with incremental OTA (-i must be true).
-                      [-o] to set the destination dir (relative) which contains generated ota zip file.
 - search:     Search in every file in the current directory for a string. Uses xargs for parallel search.
               Usage: search <string>
 - reposync:   Sync repo with with some additional flags
@@ -102,7 +96,6 @@ function launch() {
     local variant
     local wipe=false
     local installclean=false
-    local json=false
     local fastbootZip=false
     local outputDir
     local incremental=false
@@ -121,7 +114,7 @@ function launch() {
     variant=$1
     shift             # Remove build variant from options
     GAPPS_BUILD=false # Reset it here everytime
-    local SHORT="g,w,c,j,f,o:,i:"
+    local SHORT="g,w,c,f,o:,i:"
     local LONG="gapps,wipe,output-dir:,incremental:,build-both-targets,images:"
     local OPTS
     if ! OPTS=$(getopt -a -n launch --options $SHORT --longoptions $LONG -- "$@"); then
@@ -144,10 +137,6 @@ function launch() {
         -c)
             installclean=true
             wipeTargetFilesDir=true
-            shift
-            ;;
-        -j)
-            json=true
             shift
             ;;
         -f)
@@ -266,10 +255,7 @@ function launch() {
             rm -rf "${targetFilesDir:?}"/*
         fi
         __copy_new_target_files
-    fi &&
-        if $json; then
-            gen_json -o "$outputDir" -i "$incremental" -b "$buildBothTargets"
-        fi
+    fi
     local STATUS=$?
 
     endTime=$(date "+%s")
@@ -299,132 +285,6 @@ function __copy_new_target_files() {
     destTargetFile=$(__zip_append_timestamp "$destTargetFile")
     __print_info "Copying new target files package"
     cp "$newTargetFile" "$targetFilesDir/$destTargetFile"
-}
-
-function gen_json() {
-    croot
-    local REVISION="A13"
-    local outDir="$OUT"
-    local incremental=false
-    local bothTargetsExist=false
-
-    OPTIND=1
-    while getopts ":o:i:b:" option; do
-        case $option in
-        o) outDir="$OPTARG" ;;
-        i) incremental="$OPTARG" ;;
-        b) bothTargetsExist="$OPTARG" ;;
-        \?)
-            __print_error "Invalid option passed to gen_json, run hmm and learn the proper syntax"
-            return 1
-            ;;
-        esac
-    done
-
-    if $bothTargetsExist && ! $incremental; then
-        echo "Both targets cannot exist if not incremental"
-        return 1
-    fi
-
-    if [ ! -d "$outDir" ]; then
-        __print_error "Output dir $outDir doesn't exist"
-        return 1
-    fi
-
-    if [ -z "$FLAMINGO_BUILD" ]; then
-        __print_error "Have you run lunch?"
-        return 1
-    fi
-
-    local FLAVOR
-    FLAVOR=$(get_prop_value ro.flamingo.build.flavor)
-
-    local JSON_DEVICE_DIR="ota/$FLAMINGO_BUILD/$FLAVOR"
-    local JSON=$JSON_DEVICE_DIR/ota.json
-    local INCREMENTAL_JSON
-    if $incremental; then
-        INCREMENTAL_JSON=$JSON_DEVICE_DIR/incremental_ota.json
-    fi
-
-    if [ ! -d "$JSON_DEVICE_DIR" ]; then
-        mkdir -p "$JSON_DEVICE_DIR"
-    fi
-
-    local VERSION
-    VERSION=$(get_prop_value ro.flamingo.build.version)
-
-    local FILE
-    FILE=$(find "$outDir" -type f -name "FlamingoOS*$FLAMINGO_BUILD*.zip" -printf "%T@ %p\n" | grep -vE "incremental|fastboot" | tail -n 1 | awk '{ print $2 }')
-    if ! $incremental && [ ! -f "$FILE" ]; then
-        __print_error "OTA file not found!"
-        return 1
-    fi
-    if $incremental && $bothTargetsExist && [ ! -f "$FILE" ]; then
-        __print_error "OTA file not found!"
-        return 1
-    fi
-
-    local INCREMENTAL_FILE
-    INCREMENTAL_FILE=$(find "$outDir" -type f -name "FlamingoOS*$FLAMINGO_BUILD*.zip" -printf "%T@ %p\n" | grep "incremental" | tail -n 1 | awk '{ print $2 }')
-    if $incremental && [ ! -f "$INCREMENTAL_FILE" ]; then
-        __print_error "Incremental OTA file not found!"
-        return 1
-    fi
-
-    local pre_build_incremental
-    if $incremental; then
-        pre_build_incremental=$(unzip -o -p "$INCREMENTAL_FILE" META-INF/com/android/metadata | grep pre-build-incremental | awk -F "=" '{ print $2 }')
-    fi
-
-    local DATE
-    DATE=$(($(get_prop_value ro.build.date.utc) * 1000))
-
-    local PRIMARY_URL="https://downloads.e11z.net/d/flamingo/$REVISION/$FLAMINGO_BUILD/$FLAVOR"
-
-    local INCREMENTAL_NAME
-    INCREMENTAL_NAME=$(basename "$INCREMENTAL_FILE")
-
-    # Generate ota json
-    if $incremental; then
-        cat <<EOF >"$INCREMENTAL_JSON"
-{
-    "version": "$VERSION",
-    "date": "$DATE",
-    "download_sources": {
-        "OneDrive": "$PRIMARY_URL/$INCREMENTAL_NAME"
-    },
-    "file_name": "$INCREMENTAL_NAME",
-    "file_size": "$(du -b "$INCREMENTAL_FILE" | awk '{print $1}')",
-    "sha_512": "$(sha512sum "$INCREMENTAL_FILE" | awk '{print $1}')",
-    "pre_build_incremental": "$pre_build_incremental"
-}
-EOF
-        # No need to proceed if full ota isn't present
-        if ! $bothTargetsExist; then
-            return 0
-        fi
-    fi
-
-    local NAME
-    NAME=$(basename "$FILE")
-    local SIZE
-    SIZE=$(du -b "$FILE" | awk '{print $1}')
-    cat <<EOF >"$JSON"
-{
-    "version": "$VERSION",
-    "date": "$DATE",
-    "download_sources": {
-        "OneDrive": "$PRIMARY_URL/$NAME"
-    },
-    "file_name": "$NAME",
-    "file_size": "$SIZE",
-    "sha_512": "$(sha512sum "$FILE" | awk '{print $1}')"
-}
-EOF
-}
-
-function get_prop_value() {
-    grep "$1" "$OUT/system/build.prop" | sed "s/$1=//"
 }
 
 function search() {
