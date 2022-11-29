@@ -1,0 +1,18 @@
+[package]
+name = "roomservice"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+colored = "2.0.0"
+tokio = { version = "1", features = ["full"] }
+clap = { version = "4.0.15", features = ["derive"] }
+reqwest = "0.11.12"
+json = "0.12.4"
+regex = "1.6.0"
+async-recursion = "1.0.0"
+rand = "0.8.5"
+futures = "0.3.24"
+xmltree = { version = "0.10.3", features = ["attribute-order"] }

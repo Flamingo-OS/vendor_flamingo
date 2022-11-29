@@ -54,8 +54,8 @@ Flamingo OS specific functions:
 - search:     Search in every file in the current directory for a string. Uses xargs for parallel search.
               Usage: search <string>
 - reposync:   Sync repo with with some additional flags
-- fetchrepos: Set up local_manifest for device and fetch the repos set in device/<vendor>/<codename>/flamingo.dependencies
-              Usage: fetchrepos <device>
+- roomservice: Set up local_manifest for device and fetch the repos set in device/<vendor>/<codename>/flamingo.dependencies
+               Run roomservice --help for more info.
 - mergecaf: Merge in a newer caf tag across the source
               usage: mergecaf <caf tag>
 - keygen:     Generate keys for signing builds.
@@ -75,16 +75,8 @@ function __timer() {
     echo "$hr:$min:$sec"
 }
 
-function fetchrepos() {
-    if [ -z "$1" ]; then
-        __print_error "Device name must not be empty"
-        return 1
-    fi
-    if ! command -v python3 &>/dev/null; then
-        __print_error "Python3 is not installed"
-        return 1
-    fi
-    $(which python3) vendor/flamingo/scripts/roomservice.py "$1"
+function roomservice() {
+    ./vendor/flamingo/scripts/roomservice/target/release/roomservice --manifest-root ".repo" $*
 }
 
 function mergecaf() {
