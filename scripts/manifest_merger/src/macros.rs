@@ -24,13 +24,3 @@ macro_rules! error {
         }
     };
 }
-
-#[macro_export]
-macro_rules! error_exit {
-    ( $( $arg:expr ),* ) => {
-        {
-            $crate::error!($($arg),*);
-            std::process::exit(1)
-        }
-    };
-}

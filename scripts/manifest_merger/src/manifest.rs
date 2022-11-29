@@ -44,7 +44,7 @@ pub struct Manifest {
 impl Manifest {
     pub fn new(dir: &str, name: &str, tag: Option<String>) -> Self {
         Self {
-            name: name.to_string(),
+            name: name.to_owned(),
             path: format!("{dir}/{name}.xml"),
             tag,
         }
@@ -54,12 +54,13 @@ impl Manifest {
         format!("{}.xml", self.name)
     }
 
-    pub fn get_url(&self) -> String {
-        format!(
-            "https://git.codelinaro.org/clo/la/la/{0}/manifest/-/raw/{1}/{1}.xml",
-            self.name,
-            self.tag.as_ref().unwrap_or(&String::new())
-        )
+    pub fn get_url(&self) -> Option<String> {
+        self.tag.as_ref().map(|tag| {
+            format!(
+                "https://git.codelinaro.org/clo/la/la/{0}/manifest/-/raw/{1}/{1}.xml",
+                self.name, tag
+            )
+        })
     }
 
     pub fn get_remote_name(&self) -> String {
@@ -70,54 +71,58 @@ impl Manifest {
         String::from("https://git.codelinaro.org/clo/la")
     }
 
-    pub fn get_revision(&self) -> String {
-        format!("refs/tags/{}", self.tag.as_ref().unwrap_or(&String::new()))
+    pub fn get_revision(&self) -> Option<String> {
+        self.tag.as_ref().map(|tag| format!("refs/tags/{tag}"))
     }
 
-    pub fn get_file(&self) -> File {
+    pub fn get_file(&self) -> Result<File, String> {
         OpenOptions::new()
             .read(true)
             .write(true)
             .open(&self.path)
-            .expect(&format!("Failed to create {}.xml manifest file", self.name))
+            .map_err(|err| format!("Failed to create {}: {err}", self.get_name()))
     }
 }
 
-pub async fn update(client: &Client, manifest: &Option<Manifest>) {
+pub async fn update(client: &Client, manifest: &Option<Manifest>) -> Result<(), String> {
     let manifest = match manifest {
         Some(manifest) => manifest,
-        None => return,
+        None => return Ok(()),
     };
-    let result = download_manifest(&client, manifest).await;
-    match result {
-        Ok(xml_manifest) => {
-            let config = EmitterConfig::new()
-                .indent_string(XML_INDENT)
-                .perform_indent(true);
-            if let Err(err) = xml_manifest.write_with_config(manifest.get_file(), config) {
-                error_exit!("failed to write manifest: {}", err);
-            }
-        }
-        Err(err) => {
-            error_exit!("failed to get manifest: {}", err);
-        }
-    }
+    let xml_manifest = download_manifest(&client, manifest)
+        .await
+        .map_err(|err| format!("Failed to get manifest: {}", err))?;
+    let config = EmitterConfig::new()
+        .indent_string(XML_INDENT)
+        .perform_indent(true);
+    let file = manifest.get_file()?;
+    xml_manifest
+        .write_with_config(file, config)
+        .map_err(|err| format!("failed to write manifest: {}", err))
 }
 
-async fn download_manifest(
-    client: &Client,
-    manifest: &Manifest,
-) -> Result<Element, reqwest::Error> {
-    let response = client.get(manifest.get_url()).send().await?;
+async fn download_manifest(client: &Client, manifest: &Manifest) -> Result<Element, String> {
+    let url = manifest.get_url().ok_or(format!(
+        "Manifest {} does not contain a valid tag",
+        manifest.name
+    ))?;
+    let response = client
+        .get(&url)
+        .send()
+        .await
+        .map_err(|err| format!("Error while sending GET request: {err}"))?;
     if !response.status().is_success() {
-        error_exit!(
-            "GET request to {0} failed. Status code = {1}",
-            manifest.get_url(),
+        return Err(format!(
+            "GET request to {url} failed. Status code = {}",
             response.status().as_str()
-        );
+        ));
     }
-    let bytes = response.bytes().await.expect("Failed to get response body");
-    let xml_manifest = Element::parse(&bytes[..]).expect("Failed to parse manifest");
+    let bytes = response
+        .bytes()
+        .await
+        .map_err(|err| format!("Failed to get response body: {err}"))?;
+    let xml_manifest =
+        Element::parse(&bytes[..]).map_err(|err| format!("Failed to parse manifest: {err}"))?;
     Ok(transform_manifest(
         xml_manifest,
         &manifest.get_remote_name(),
@@ -127,13 +132,13 @@ async fn download_manifest(
 fn transform_manifest(manifest: Element, remote: &String) -> Element {
     // Filter child elements of <manifest></manifest>
     // Currently we only care about <project> elements.
-    let elements_to_keep = HashSet::from([ELEMENT_PROJECT.to_string()]);
+    let elements_to_keep = HashSet::from([ELEMENT_PROJECT.to_owned()]);
 
     // Remove attributes from <project> elements.
     let attrs_to_keep = HashSet::from([
-        ATTR_CLONE_DEPTH.to_string(),
-        ATTR_NAME.to_string(),
-        ATTR_PATH.to_string(),
+        ATTR_CLONE_DEPTH.to_owned(),
+        ATTR_NAME.to_owned(),
+        ATTR_PATH.to_owned(),
     ]);
 
     // Shallow clone (clone-depth="1") some big repos by default
@@ -154,63 +159,56 @@ fn transform_manifest(manifest: Element, remote: &String) -> Element {
                 true
             }
         })
-        .map(|node| {
-            if let XMLNode::Element(elem) = node {
+        .for_each(|node| {
+            let node = if let XMLNode::Element(elem) = node {
                 let mut filtered_element = Element {
                     attributes: elem
                         .attributes
                         .iter()
-                        .filter(|(key, _)| attrs_to_keep.contains(&key[..]))
+                        .filter(|(key, _)| attrs_to_keep.contains(*key))
                         .map(|(key, value)| (key.to_owned(), value.to_owned()))
                         .collect(),
                     ..elem.to_owned()
                 };
 
+                let attrs = &mut filtered_element.attributes;
+
                 // Some repos have clone-depth="2", let's just keep
                 // it 1 for our sake.
-                filtered_element
-                    .attributes
+                attrs
                     .entry(ATTR_CLONE_DEPTH.to_string())
                     .and_modify(|depth| *depth = String::from("1"));
 
                 // Set remote from our default.xml manifest
-                filtered_element
-                    .attributes
-                    .insert(ATTR_REMOTE.to_string(), remote.to_owned());
+                attrs.insert(ATTR_REMOTE.to_string(), remote.to_owned());
 
-                let name = filtered_element.attributes.get(ATTR_NAME).unwrap();
+                let name = attrs.get(ATTR_NAME).unwrap();
                 let should_shallow_clone = shallow_clone_repos
                     .iter()
                     .any(|prefix| name.starts_with(prefix));
                 if should_shallow_clone {
-                    filtered_element
-                        .attributes
+                    attrs
                         .entry(ATTR_CLONE_DEPTH.to_string())
                         .or_insert(String::from("1"));
                 }
                 XMLNode::Element(filtered_element)
             } else {
                 node.to_owned()
-            }
-        })
-        .for_each(|node| transformed_manifest.children.push(node));
+            };
+            transformed_manifest.children.push(node)
+        });
     transformed_manifest
 }
 
 fn read_manifest(manifest: &Manifest) -> Result<Element, String> {
     let mut bytes: Vec<u8> = Vec::new();
-    let mut reader = BufReader::new(manifest.get_file());
-    let read_result = reader.read_to_end(&mut bytes);
-    match read_result {
-        Ok(bytes_read) => {
-            let parse_result = Element::parse(&bytes[..bytes_read]);
-            match parse_result {
-                Ok(element) => Ok(element),
-                Err(err) => Err(format!("Failed to parse {}: {err}", manifest.get_name())),
-            }
-        }
-        Err(err) => Err(format!("Failed to read {}: {err}", manifest.get_name())),
-    }
+    let file = manifest.get_file()?;
+    let mut reader = BufReader::new(file);
+    let bytes_read = reader
+        .read_to_end(&mut bytes)
+        .map_err(|err| format!("Failed to read {}: {err}", manifest.get_name()))?;
+    Element::parse(&bytes[..bytes_read])
+        .map_err(|err| format!("Failed to parse {}: {err}", manifest.get_name()))
 }
 
 pub fn get_repos(manifest: &Manifest) -> Result<HashMap<String, String>, String> {
@@ -218,17 +216,14 @@ pub fn get_repos(manifest: &Manifest) -> Result<HashMap<String, String>, String>
         manifest
             .children
             .iter()
-            .map(|node| node.as_element())
-            .filter(|element| element.is_some())
-            .map(|element| element.unwrap())
-            .filter(|element| {
-                element.attributes.contains_key(ATTR_PATH)
-                    && element.attributes.contains_key(ATTR_NAME)
-            })
-            .map(|element| {
-                let path = element.attributes.get(ATTR_PATH).unwrap().to_owned();
-                let name = element.attributes.get(ATTR_NAME).unwrap().to_owned();
-                (path, name)
+            .filter_map(|node| node.as_element())
+            .filter_map(|element| {
+                let attrs = &element.attributes;
+                let mapper = |attr: &String| attr.to_owned();
+                attrs
+                    .get(ATTR_PATH)
+                    .map(mapper)
+                    .zip(attrs.get(ATTR_NAME).map(mapper))
             })
             .collect()
     })
@@ -238,33 +233,46 @@ pub fn update_default(
     default_manifest: Manifest,
     system_manifest: &Option<Manifest>,
     vendor_manifest: &Option<Manifest>,
-) {
-    let mut xml_manifest =
-        read_manifest(&default_manifest).expect("Failed to parse default manifest");
-    xml_manifest.children.iter_mut().for_each(|node| {
-        if let XMLNode::Element(elem) = node {
-            if elem.name.eq(ATTR_REMOTE) {
-                let remote_name = elem
-                    .attributes
-                    .get(ATTR_NAME)
-                    .expect("Remote should have a name")
-                    .to_string();
-                elem.attributes
-                    .entry(ATTR_REVISION.to_string())
-                    .and_modify(|revision| {
-                        if system_manifest.is_some() {
-                            let system_manifest = system_manifest.as_ref().unwrap();
-                            if remote_name.eq(&system_manifest.get_remote_name()) {
-                                *revision = system_manifest.get_revision();
-                            }
-                        } else if vendor_manifest.is_some() {
-                            let vendor_manifest = vendor_manifest.as_ref().unwrap();
-                            if remote_name.eq(&vendor_manifest.get_remote_name()) {
-                                *revision = vendor_manifest.get_revision();
+) -> Result<(), String> {
+    let mut xml_manifest = read_manifest(&default_manifest)
+        .map_err(|err| format!("Failed to parse {}: {err}", default_manifest.get_name()))?;
+    xml_manifest
+        .children
+        .iter_mut()
+        .filter_map(|node| node.as_mut_element())
+        .filter(|element| element.name == ATTR_REMOTE)
+        .map(|element| &mut element.attributes)
+        .for_each(|attrs| {
+            let remote_name = attrs.get(ATTR_NAME).map(|name_str| name_str.to_owned());
+            if remote_name == None {
+                error!(
+                    "Remote element attributes {:?} does not have key {ATTR_NAME}",
+                    attrs
+                );
+                return;
+            }
+            let remote_name = remote_name.unwrap();
+            attrs
+                .entry(ATTR_REVISION.to_owned())
+                .and_modify(|revision| {
+                    if system_manifest.is_some() {
+                        let system_manifest = system_manifest.as_ref().unwrap();
+                        if remote_name == system_manifest.get_remote_name() {
+                            let system_revision = system_manifest.get_revision();
+                            if system_revision.is_some() {
+                                *revision = system_revision.unwrap();
                             }
                         }
-                    });
-            }
-        }
-    });
+                    } else if vendor_manifest.is_some() {
+                        let vendor_manifest = vendor_manifest.as_ref().unwrap();
+                        if remote_name == vendor_manifest.get_remote_name() {
+                            let vendor_revision = vendor_manifest.get_revision();
+                            if vendor_revision.is_some() {
+                                *revision = vendor_revision.unwrap();
+                            }
+                        }
+                    }
+                });
+        });
+    Ok(())
 }

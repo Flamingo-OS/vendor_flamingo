@@ -31,7 +31,7 @@ pub fn get_or_create_remote<'a>(
         Ok(remote) => Ok(remote),
         Err(err) => {
             if err.code() == ErrorCode::Exists {
-                Ok(repo.find_remote(name).unwrap())
+                repo.find_remote(name)
             } else {
                 Err(err)
             }
@@ -62,17 +62,6 @@ pub fn add_and_commit(repository: &Repository, pathspec: &str, message: &str) ->
         .map(|_| ())
 }
 
-fn get_repo_name(repository: &Repository) -> &str {
-    repository
-        .path()
-        .parent()
-        .unwrap()
-        .file_stem()
-        .unwrap()
-        .to_str()
-        .unwrap()
-}
-
 pub fn push(repository: &Repository) -> Result<(), Error> {
     let mut callbacks = RemoteCallbacks::new();
     callbacks.credentials(|_, username_from_url, _| {
@@ -80,14 +69,8 @@ pub fn push(repository: &Repository) -> Result<(), Error> {
     });
     let mut push_options = PushOptions::new();
     push_options.remote_callbacks(callbacks);
-    repository
-        .find_remote(FLAMINGO_REMOTE)
-        .expect(&format!(
-            "Flamingo remote not found in {}",
-            get_repo_name(repository)
-        ))
-        .push(
-            &[format!("HEAD:refs/heads/{FLAMINGO_BRANCH}")],
-            Some(&mut push_options),
-        )
+    repository.find_remote(FLAMINGO_REMOTE)?.push(
+        &[format!("HEAD:refs/heads/{FLAMINGO_BRANCH}")],
+        Some(&mut push_options),
+    )
 }

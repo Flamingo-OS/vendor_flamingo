@@ -41,62 +41,65 @@ pub fn merge_upstream(
     vendor_manifest: &Option<Manifest>,
     thread_count: usize,
     push: bool,
-) {
-    let flamingo_repos = manifest::get_repos(&flamingo_manifest).unwrap();
-    let system_repos = system_manifest.as_ref().map_or(HashMap::new(), |manifest| {
-        manifest::get_repos(manifest).unwrap()
-    });
-    let vendor_repos = vendor_manifest.as_ref().map_or(HashMap::new(), |manifest| {
-        manifest::get_repos(manifest).unwrap()
-    });
+) -> Result<(), String> {
+    let flamingo_repos = manifest::get_repos(&flamingo_manifest)?;
+    let system_repos = system_manifest
+        .as_ref()
+        .map_or(Ok(HashMap::with_capacity(0)), |manifest| {
+            manifest::get_repos(manifest)
+        })?;
+    let vendor_repos = vendor_manifest
+        .as_ref()
+        .map_or(Ok(HashMap::with_capacity(0)), |manifest| {
+            manifest::get_repos(manifest)
+        })?;
 
     let thread_pool = ThreadPool::new(thread_count);
     flamingo_repos
         .iter()
-        .map(|(path, _)| {
-            if system_manifest.is_some() && system_repos.contains_key(&path[..]) {
+        .filter_map(|(path, _)| {
+            if system_manifest.is_some() && system_repos.contains_key(path) {
                 let system_manifest = system_manifest.as_ref().unwrap();
                 Some(MergeData {
                     remote_name: system_manifest.get_remote_name(),
                     remote_url: format!(
                         "{}/{}",
                         system_manifest.get_remote_url(),
-                        system_repos.get(path).unwrap()
+                        system_repos[path]
                     ),
-                    repo_path: format!("{}/{}", source, path.to_string()),
-                    repo_name: path.to_string(),
-                    revision: system_manifest.get_revision(),
-                    push: push,
+                    repo_path: format!("{}/{}", source, path),
+                    repo_name: path.to_owned(),
+                    revision: system_manifest.get_revision().unwrap(),
+                    push,
                 })
-            } else if vendor_manifest.is_some() && vendor_repos.contains_key(&path[..]) {
+            } else if vendor_manifest.is_some() && vendor_repos.contains_key(path) {
                 let vendor_manifest = vendor_manifest.as_ref().unwrap();
                 Some(MergeData {
                     remote_name: vendor_manifest.get_remote_name(),
                     remote_url: format!(
                         "{}/{}",
                         vendor_manifest.get_remote_url(),
-                        vendor_repos.get(path).unwrap()
+                        vendor_repos[path]
                     ),
-                    repo_path: format!("{}/{}", source, path.to_string()),
-                    repo_name: path.to_string(),
-                    revision: vendor_manifest.get_revision(),
-                    push: push,
+                    repo_path: format!("{}/{}", source, path),
+                    repo_name: path.to_owned(),
+                    revision: vendor_manifest.get_revision().unwrap(),
+                    push,
                 })
             } else {
                 None
             }
         })
-        .filter(|merge_data| merge_data.is_some())
-        .map(|merge_data| merge_data.unwrap())
         .for_each(|merge_data| {
             thread_pool.execute(|| {
-                let repo_name = merge_data.repo_name.to_string();
+                let repo_name = merge_data.repo_name.to_owned();
                 if let Err(err) = merge_in_repo(merge_data) {
                     error!("failed to merge in {repo_name}: {err}");
                 }
             })
         });
     thread_pool.join();
+    Ok(())
 }
 
 fn merge_in_repo(merge_data: MergeData) -> Result<(), Error> {
@@ -129,11 +132,14 @@ fn merge_in_repo(merge_data: MergeData) -> Result<(), Error> {
     let signature = repo.signature()?;
     let parent_commit = repo.head()?.peel_to_commit()?;
     let tree = repo.find_tree(oid)?;
-    let message = format!(
-        "Merge tag \'{}\' of {} into HEAD",
-        &merge_data.revision.split('/').last().unwrap(),
-        remote.url().unwrap()
-    );
+    let (_, tag) = merge_data
+        .revision
+        .rsplit_once('/')
+        .ok_or(Error::from_str(&format!(
+            "Malformed revision {}",
+            merge_data.revision
+        )))?;
+    let message = format!("Merge tag '{tag}' of {} into HEAD", remote.url().unwrap());
     repo.commit(
         Some("HEAD"),
         &signature,

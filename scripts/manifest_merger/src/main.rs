@@ -15,7 +15,7 @@
  */
 
 use clap::Parser;
-use git2::Repository;
+use git2::{Error, Repository};
 use manifest::Manifest;
 use regex::Regex;
 use reqwest::Client;
@@ -68,31 +68,35 @@ struct Args {
 }
 
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<(), String> {
     let args = Args::parse();
 
     if !args.system_tag.is_some() && !args.vendor_tag.is_some() {
-        error_exit!("no tags specified. Specify atleast one of -s or -v");
+        return Err(String::from(
+            "No tags specified. Specify atleast one of -s or -v",
+        ));
     }
 
     let system_manifest = args
         .system_tag
         .as_ref()
-        .map(|tag| Manifest::new(&args.mainfest_dir, "system", Some(tag.to_string())));
+        .map(|tag| Manifest::new(&args.mainfest_dir, "system", Some(tag.to_owned())));
     let vendor_manifest = args
         .vendor_tag
         .as_ref()
-        .map(|tag| Manifest::new(&args.mainfest_dir, "vendor", Some(tag.to_string())));
+        .map(|tag| Manifest::new(&args.mainfest_dir, "vendor", Some(tag.to_owned())));
 
     let client = Client::new();
 
-    futures::join!(
+    let (system_update, vendor_update) = futures::join!(
         manifest::update(&client, &system_manifest),
         manifest::update(&client, &vendor_manifest)
     );
+    system_update?;
+    vendor_update?;
 
     let default_manifest = Manifest::new(&args.mainfest_dir, "default", None);
-    manifest::update_default(default_manifest, &system_manifest, &vendor_manifest);
+    manifest::update_default(default_manifest, &system_manifest, &vendor_manifest)?;
 
     let flamingo_manifest = Manifest::new(&args.mainfest_dir, "flamingo", None);
     merge::merge_upstream(
@@ -102,17 +106,17 @@ async fn main() {
         &vendor_manifest,
         args.threads,
         args.push,
-    );
+    )?;
 
     if args.set_version.is_some() {
-        let version = args.set_version.unwrap();
-        let mut version_itr = version.split('.');
-        set_version(
-            version_itr.next().unwrap().parse().unwrap(),
-            version_itr.next().unwrap().parse().unwrap(),
-            &args.source_dir,
-            args.push,
-        );
+        let (major, minor) = args
+            .set_version
+            .unwrap()
+            .split_once('.')
+            .map(|(major, minor)| major.parse::<usize>().ok().zip(minor.parse::<usize>().ok()))
+            .flatten()
+            .ok_or(String::from("--set-version value is malformed"))?;
+        set_version(major, minor, &args.source_dir, args.push)?;
     }
 
     update_manifest(
@@ -120,7 +124,8 @@ async fn main() {
         &args.system_tag,
         &args.vendor_tag,
         args.push,
-    );
+    )
+    .map_err(|err| format!("Failed to update manifest: {err}"))
 }
 
 fn update_manifest(
@@ -128,35 +133,33 @@ fn update_manifest(
     system_tag: &Option<String>,
     vendor_tag: &Option<String>,
     push: bool,
-) {
-    match Repository::open(mainfest_dir) {
-        Ok(repo) => {
-            git::get_or_create_remote(&repo, MANIFEST_REMOTE_NAME, MANIFEST_REMOTE_URL).unwrap();
-            let mut message = format!("manifest: upstream with clo\n");
-            if let Some(tag) = system_tag {
-                message = format!("{message}\n* system tag: {tag}");
-            }
-            if let Some(tag) = vendor_tag {
-                message = format!("{message}\n* vendor tag: {tag}");
-            }
-            if let Err(err) = git::add_and_commit(&repo, ".", &message) {
-                error_exit!("failed to commit version change: {err}");
-            }
-            if push {
-                if let Err(err) = git::push(&repo) {
-                    error_exit!("failed to push manifest: {err}");
-                }
-            }
-        }
-        Err(err) => {
-            error_exit!("failed to open manifest repository: {err}");
-        }
+) -> Result<(), Error> {
+    let repo = Repository::open(mainfest_dir)?;
+    git::get_or_create_remote(&repo, MANIFEST_REMOTE_NAME, MANIFEST_REMOTE_URL)?;
+    let mut message = format!("manifest: upstream with clo\n");
+    if let Some(tag) = system_tag {
+        message = format!("{message}\n* system tag: {tag}");
+    }
+    if let Some(tag) = vendor_tag {
+        message = format!("{message}\n* vendor tag: {tag}");
+    }
+    git::add_and_commit(&repo, ".", &message)?;
+    if push {
+        git::push(&repo)
+    } else {
+        Ok(())
     }
 }
 
-fn set_version(major_version: usize, minor_version: usize, source: &str, push: bool) {
+fn set_version(
+    major_version: usize,
+    minor_version: usize,
+    source: &str,
+    push: bool,
+) -> Result<(), String> {
     let file = format!("{source}/{FLAMINGO_VENDOR}/{VERSION_FILE}");
-    let version_file_content = fs::read_to_string(&file).expect("Failed to read version file");
+    let version_file_content =
+        fs::read_to_string(&file).map_err(|err| format!("Failed to read version file: {err}"))?;
 
     let regex = Regex::new(r"FLAMINGO_VERSION_MAJOR\s:=\s\d+").unwrap();
     let version_file_content = regex.replace(
@@ -170,25 +173,21 @@ fn set_version(major_version: usize, minor_version: usize, source: &str, push: b
         format!("{} := {}", MINOR_VERSION_STR, minor_version),
     );
 
-    fs::write(file, version_file_content.to_string()).expect("Failed to set version");
+    fs::write(file, version_file_content.to_string())
+        .map_err(|err| format!("Failed to set version: {err}"))?;
 
     let repo_path = format!("{source}/{FLAMINGO_VENDOR}");
-    match Repository::open(&repo_path) {
-        Ok(repo) => {
-            let message = format!(
-                "flamingo: version: update to {}.{}",
-                major_version, minor_version
-            );
-            if let Err(err) = git::add_and_commit(&repo, VERSION_FILE, &message) {
-                error!("failed to commit version change: {err}");
-                return;
-            }
-            if push {
-                if let Err(err) = git::push(&repo) {
-                    error_exit!("failed to push {FLAMINGO_VENDOR} repo: {err}");
-                }
-            }
-        }
-        Err(err) => error_exit!("failed to open {FLAMINGO_VENDOR} repository: {err}"),
+    let repo = Repository::open(&repo_path)
+        .map_err(|err| format!("Failed to open {FLAMINGO_VENDOR} repository: {err}"))?;
+    let message = format!(
+        "flamingo: version: update to {}.{}",
+        major_version, minor_version
+    );
+    git::add_and_commit(&repo, VERSION_FILE, &message)
+        .map_err(|err| format!("Failed to commit version change: {err}"))?;
+    if push {
+        git::push(&repo).map_err(|err| format!("Failed to push {FLAMINGO_VENDOR} repo: {err}"))
+    } else {
+        Ok(())
     }
 }
