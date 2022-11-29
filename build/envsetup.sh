@@ -80,7 +80,7 @@ function roomservice() {
 }
 
 function mergecaf() {
-    cargo run -qr --manifest-path vendor/flamingo/scripts/manifest_merger/Cargo.toml -- $*
+    ./vendor/flamingo/scripts/manifest_merger/target/release/manifest_merger $*
 }
 
 function launch() {
