@@ -127,7 +127,7 @@ fn merge_in_repo(merge_data: MergeData) -> Result<(), Error> {
     let statuses = repo.statuses(Some(&mut StatusOptions::default()))?;
     if statuses.is_empty() {
         println!("{} is already up-to-date", &merge_data.repo_name);
-        return Ok(());
+        return repo.cleanup_state()
     }
     let signature = repo.signature()?;
     let parent_commit = repo.head()?.peel_to_commit()?;
