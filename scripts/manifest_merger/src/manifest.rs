@@ -17,12 +17,15 @@
 use std::collections::HashMap;
 use std::fs::{File, OpenOptions};
 
+use git2::Repository;
 use reqwest::Client;
 use std::collections::HashSet;
 use std::io::{BufReader, Read};
 use std::option::Option;
 use std::vec::Vec;
 use xmltree::{Element, EmitterConfig, XMLNode};
+
+use crate::git;
 
 const ELEMENT_MANIFEST: &str = "manifest";
 const ELEMENT_PROJECT: &str = "project";
@@ -73,6 +76,15 @@ impl Manifest {
 
     pub fn get_revision(&self) -> Option<String> {
         self.tag.as_ref().map(|tag| format!("refs/tags/{tag}"))
+    }
+
+    pub fn get_repo_path(&self) -> String {
+        let splt_path = self
+            .path
+            .split("/")
+            .map(|s| s.to_owned())
+            .collect::<Vec<String>>();
+        splt_path[..splt_path.len() - 1].join("/")
     }
 
     pub fn get_truncated_file(&self) -> Result<File, String> {
@@ -242,6 +254,7 @@ pub fn update_default(
     default_manifest: Manifest,
     system_manifest: &Option<Manifest>,
     vendor_manifest: &Option<Manifest>,
+    push: bool
 ) -> Result<(), String> {
     let mut xml_manifest = read_manifest(&default_manifest)
         .map_err(|err| format!("Failed to parse {}: {err}", default_manifest.get_name()))?;
@@ -281,7 +294,6 @@ pub fn update_default(
                             }
                         }
                     }
-                    println!("{}: {}", remote_name, revision)
                 });
         });
     let file = default_manifest.get_truncated_file()?;
@@ -291,5 +303,27 @@ pub fn update_default(
     xml_manifest
         .write_with_config(file, config)
         .map_err(|err| format!("failed to write manifest: {}", err))?;
-    Ok(())
+    let repo = Repository::open(default_manifest.get_repo_path())
+        .map_err(|err| format!("Failed to open manifest repository: {err}"))?;
+    if system_manifest.as_ref().is_some() {
+        let msg = format!(
+            "system: Update default manifest to {}",
+            system_manifest.as_ref().unwrap().get_revision().unwrap()
+        );
+        println!("Committing: {}", msg);
+        git::add_and_commit(&repo, "*", &msg)
+            .map_err(|err| format!("Failed to commit version change: {err}"))?;
+    } else {
+        let msg = format!(
+            "vendor: Update default manifest to {}",
+            vendor_manifest.as_ref().unwrap().get_revision().unwrap()
+        );
+        git::add_and_commit(&repo, "*", &msg)
+            .map_err(|err| format!("Failed to commit version change: {err}"))?;
+    }
+    if push {
+        git::push(&repo).map_err(|err| format!("Failed to push manifest repo: {err}"))
+    } else {
+        Ok(())
+    }
 }

@@ -96,7 +96,7 @@ async fn main() -> Result<(), String> {
     vendor_update?;
 
     let default_manifest = Manifest::new(&args.mainfest_dir, "default", None);
-    manifest::update_default(default_manifest, &system_manifest, &vendor_manifest)?;
+    manifest::update_default(default_manifest, &system_manifest, &vendor_manifest, args.push)?;
 
     let flamingo_manifest = Manifest::new(&args.mainfest_dir, "flamingo", None);
     merge::merge_upstream(
@@ -105,7 +105,7 @@ async fn main() -> Result<(), String> {
         &system_manifest,
         &vendor_manifest,
         args.threads,
-        args.push,
+        args.push
     )?;
 
     if args.set_version.is_some() {
