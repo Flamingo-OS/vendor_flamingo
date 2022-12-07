@@ -79,6 +79,7 @@ impl Manifest {
         OpenOptions::new()
             .read(true)
             .write(true)
+            .truncate(true)
             .open(&self.path)
             .map_err(|err| format!("Failed to create {}: {err}", self.get_name()))
     }
