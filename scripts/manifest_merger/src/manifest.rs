@@ -75,11 +75,19 @@ impl Manifest {
         self.tag.as_ref().map(|tag| format!("refs/tags/{tag}"))
     }
 
-    pub fn get_file(&self) -> Result<File, String> {
+    pub fn get_truncated_file(&self) -> Result<File, String> {
         OpenOptions::new()
             .read(true)
             .write(true)
             .truncate(true)
+            .open(&self.path)
+            .map_err(|err| format!("Failed to create {}: {err}", self.get_name()))
+    }
+
+    pub fn get_file(&self) -> Result<File, String> {
+        OpenOptions::new()
+            .read(true)
+            .write(true)
             .open(&self.path)
             .map_err(|err| format!("Failed to create {}: {err}", self.get_name()))
     }
@@ -96,7 +104,7 @@ pub async fn update(client: &Client, manifest: &Option<Manifest>) -> Result<(), 
     let config = EmitterConfig::new()
         .indent_string(XML_INDENT)
         .perform_indent(true);
-    let file = manifest.get_file()?;
+    let file = manifest.get_truncated_file()?;
     xml_manifest
         .write_with_config(file, config)
         .map_err(|err| format!("failed to write manifest: {}", err))
@@ -273,7 +281,15 @@ pub fn update_default(
                             }
                         }
                     }
+                    println!("{}: {}", remote_name, revision)
                 });
         });
+    let file = default_manifest.get_truncated_file()?;
+    let config = EmitterConfig::new()
+        .indent_string(XML_INDENT)
+        .perform_indent(true);
+    xml_manifest
+        .write_with_config(file, config)
+        .map_err(|err| format!("failed to write manifest: {}", err))?;
     Ok(())
 }
