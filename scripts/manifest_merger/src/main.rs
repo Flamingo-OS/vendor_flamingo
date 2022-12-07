@@ -17,6 +17,7 @@
 use clap::Parser;
 use git2::{Error, Repository};
 use manifest::Manifest;
+use merge::merge_aosp;
 use regex::Regex;
 use reqwest::Client;
 use std::fs;
@@ -65,6 +66,9 @@ struct Args {
     /// Version to be set
     #[arg(long)]
     set_version: Option<String>,
+
+    #[arg(long)]
+    aosp: bool,
 }
 
 #[tokio::main]
@@ -86,6 +90,11 @@ async fn main() -> Result<(), String> {
         .as_ref()
         .map(|tag| Manifest::new(&args.mainfest_dir, "vendor", Some(tag.to_owned())));
 
+    if args.aosp && system_manifest.is_some() {
+        merge_aosp(&args.source_dir, &system_manifest, args.threads, args.push)?;
+        return Ok(());
+    }
+
     let client = Client::new();
 
     let (system_update, vendor_update) = futures::join!(
@@ -96,7 +105,12 @@ async fn main() -> Result<(), String> {
     vendor_update?;
 
     let default_manifest = Manifest::new(&args.mainfest_dir, "default", None);
-    manifest::update_default(default_manifest, &system_manifest, &vendor_manifest, args.push)?;
+    manifest::update_default(
+        default_manifest,
+        &system_manifest,
+        &vendor_manifest,
+        args.push,
+    )?;
 
     let flamingo_manifest = Manifest::new(&args.mainfest_dir, "flamingo", None);
     merge::merge_upstream(
@@ -105,7 +119,7 @@ async fn main() -> Result<(), String> {
         &system_manifest,
         &vendor_manifest,
         args.threads,
-        args.push
+        args.push,
     )?;
 
     if args.set_version.is_some() {

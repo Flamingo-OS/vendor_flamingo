@@ -74,6 +74,10 @@ impl Manifest {
         String::from("https://git.codelinaro.org/clo/la")
     }
 
+    pub fn get_aosp_remote_url(&self) -> String {
+        format!("https://android.googlesource.com/platform")
+    }
+
     pub fn get_revision(&self) -> Option<String> {
         self.tag.as_ref().map(|tag| format!("refs/tags/{tag}"))
     }

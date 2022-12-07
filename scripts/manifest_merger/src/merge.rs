@@ -102,6 +102,45 @@ pub fn merge_upstream(
     Ok(())
 }
 
+pub fn merge_aosp(
+    source: &str,
+    system_manifest: &Option<Manifest>,
+    thread_count: usize,
+    push: bool,
+) -> Result<(), String> {
+    let system_repos = system_manifest
+        .as_ref()
+        .map_or(Ok(HashMap::with_capacity(0)), |manifest| {
+            manifest::get_repos(manifest)
+        })?;
+    let thread_pool = ThreadPool::new(thread_count);
+    system_repos
+        .iter()
+        .for_each(|(path, _)| {
+            let system_manifest = system_manifest.as_ref().unwrap();
+            let merge_data = MergeData {
+                remote_name: system_manifest.get_remote_name(),
+                remote_url: format!(
+                    "{}/{}",
+                    system_manifest.get_aosp_remote_url(),
+                    system_repos[path]
+                ),
+                repo_path: format!("{}/{}", source, path),
+                repo_name: path.to_owned(),
+                revision: system_manifest.get_revision().unwrap(),
+                push,
+            };
+            thread_pool.execute(|| {
+                let repo_name = merge_data.repo_name.to_owned();
+                if let Err(err) = merge_in_repo(merge_data) {
+                    error!("failed to merge in {repo_name}: {err}");
+                }
+            })
+        });
+    thread_pool.join();
+    Ok(())
+}
+
 fn merge_in_repo(merge_data: MergeData) -> Result<(), Error> {
     println!("Merging in {}", &merge_data.repo_name);
     let repo = Repository::open(&merge_data.repo_path)?;
@@ -127,7 +166,7 @@ fn merge_in_repo(merge_data: MergeData) -> Result<(), Error> {
     let statuses = repo.statuses(Some(&mut StatusOptions::default()))?;
     if statuses.is_empty() {
         println!("{} is already up-to-date", &merge_data.repo_name);
-        return repo.cleanup_state()
+        return repo.cleanup_state();
     }
     let signature = repo.signature()?;
     let parent_commit = repo.head()?.peel_to_commit()?;
