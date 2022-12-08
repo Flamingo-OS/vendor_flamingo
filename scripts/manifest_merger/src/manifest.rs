@@ -74,8 +74,12 @@ impl Manifest {
         String::from("https://git.codelinaro.org/clo/la")
     }
 
+    pub fn get_aosp_remote_name(&self) -> String {
+        format!("aosp")
+    }
+
     pub fn get_aosp_remote_url(&self) -> String {
-        format!("https://android.googlesource.com/platform")
+        format!("https://android.googlesource.com")
     }
 
     pub fn get_revision(&self) -> Option<String> {

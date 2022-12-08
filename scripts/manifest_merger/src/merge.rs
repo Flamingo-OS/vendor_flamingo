@@ -118,8 +118,12 @@ pub fn merge_aosp(
         .iter()
         .for_each(|(path, _)| {
             let system_manifest = system_manifest.as_ref().unwrap();
+            if path.contains("external/") || path.contains("prebuilts/") {
+                println!("Skipping {}", path);
+                return; // Skip external and prebuilts
+            }
             let merge_data = MergeData {
-                remote_name: system_manifest.get_remote_name(),
+                remote_name: system_manifest.get_aosp_remote_name(),
                 remote_url: format!(
                     "{}/{}",
                     system_manifest.get_aosp_remote_url(),
