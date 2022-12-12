@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-use crate::dependency::Dependency;
+use crate::{dependency::Dependency, remotes};
 use std::fs::File;
 use xmltree::{Element, EmitterConfig, XMLNode};
 
@@ -53,7 +53,10 @@ impl Manifest {
             .map(|dependency| {
                 let mut project_element = Element::new(defs::PROJECT_ELEMENT);
                 let attrs = &mut project_element.attributes;
-                attrs.insert(defs::ATTR_NAME.to_owned(), get_project_name(dependency));
+                attrs.insert(
+                    defs::ATTR_NAME.to_owned(),
+                    get_project_name(dependency).to_owned(),
+                );
                 attrs.insert(defs::ATTR_PATH.to_owned(), dependency.path.to_owned());
                 attrs.insert(defs::ATTR_REMOTE.to_owned(), dependency.remote.to_owned());
                 attrs.insert(defs::ATTR_REVISION.to_owned(), dependency.branch.to_owned());
@@ -81,10 +84,11 @@ impl Manifest {
     }
 }
 
-fn get_project_name(dependency: &Dependency) -> String {
-    if dependency.name.contains("/") {
-        dependency.name.rsplit_once('/').unwrap().1.to_owned()
+fn get_project_name(dependency: &Dependency) -> &str {
+    if dependency.remote == remotes::GITHUB || !dependency.name.contains("/") {
+        &dependency.name
     } else {
-        dependency.name.to_owned()
+        let (_, repo_name) = dependency.name.rsplit_once('/').unwrap();
+        repo_name
     }
 }

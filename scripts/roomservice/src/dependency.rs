@@ -44,38 +44,30 @@ impl Dependency {
                     let remote = remotes
                         .get(other)
                         .ok_or(format!("No such remote exists with the name {other}"))?;
-                    let prefix = remote
+                    let (_, prefix) = remote
                         .fetch
                         .trim_end_matches('/')
                         .rsplit_once('/')
                         .ok_or(format!("Remote {:?} is not well defined", remote))?;
-                    Ok(format!("{}/{name}", prefix.1))
+                    Ok(format!("{}/{name}", prefix))
                 }
             }?;
             let branch = match get_string(&repo, DEPS_KEY_BRANCH) {
                 Some(revision) => Ok::<String, String>(revision),
-                None => {
-                    match remote.as_str() {
-                        remotes::GITHUB => Err(String::from("nigga")),
-                        other => {
-                            // At this point remote exists and well defined hence using direct access.
-                            let remote = &remotes[other];
-                            remote
-                                .revision
-                                .as_ref()
-                                .map(|rev| rev.to_owned())
-                                .ok_or(format!("Remote {other} does not have a default revision"))
-                        }
-                    }
-                }
+                None => remotes
+                    .get(&remote)
+                    .map(|remote| remote.revision.as_ref())
+                    .flatten()
+                    .map(|revision| revision.to_owned())
+                    .ok_or(format!("Remote {remote} does not have a default revision")),
             }?;
             let clone_depth = get_string(&repo, DEPS_KEY_DEPTH);
             Ok(Dependency {
                 name: repo_name,
-                path: path,
-                remote: remote,
-                branch: branch,
-                clone_depth: clone_depth,
+                path,
+                remote,
+                branch,
+                clone_depth,
             })
         } else {
             return Err(format!("{json} is not an Object"));
