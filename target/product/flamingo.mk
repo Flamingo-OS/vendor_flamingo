@@ -13,8 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+ifeq ($(strip $(SIGNING_KEYS)),)
 ifneq ($(wildcard certs/releasekey.*),)
 SIGNING_KEYS := certs/releasekey
+endif
 endif
 
 ifeq ($(strip $(OFFICIAL_BUILD)),true)
