@@ -44,6 +44,8 @@ SOONG_CONFIG_flamingo_target_surfaceflinger_udfps_lib := $(TARGET_SURFACEFLINGER
 SOONG_CONFIG_flamingo_supports_audio_accessory := $(TARGET_QTI_USB_SUPPORTS_AUDIO_ACCESSORY)
 SOONG_CONFIG_flamingo_supports_debug_accessory := $(TARGET_QTI_USB_SUPPORTS_DEBUG_ACCESSORY)
 
+$(call add_soong_config_var,flamingo,GAPPS_BUILD)
+
 # Qualcomm variables
 SOONG_CONFIG_NAMESPACES += aosp_vs_qva
 SOONG_CONFIG_aosp_vs_qva += aosp_or_qva
