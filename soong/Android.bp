@@ -3,7 +3,7 @@
 soong_config_module_type {
     name: "needs_camera_boottime",
     module_type: "cc_defaults",
-    config_namespace: "flamingoGlobalVars",
+    config_namespace: "flamingo",
     bool_variables: ["needs_camera_boottime"],
     properties: ["cppflags"],
 }
@@ -20,7 +20,7 @@ needs_camera_boottime {
 soong_config_module_type {
     name: "camera_needs_client_info",
     module_type: "cc_defaults",
-    config_namespace: "flamingoGlobalVars",
+    config_namespace: "flamingo",
     bool_variables: ["camera_needs_client_info"],
     properties: ["cppflags"],
 }
@@ -37,7 +37,7 @@ camera_needs_client_info {
 soong_config_module_type {
     name: "camera_needs_client_info_lib",
     module_type: "cc_defaults",
-    config_namespace: "flamingoGlobalVars",
+    config_namespace: "flamingo",
     bool_variables: ["camera_needs_client_info_lib"],
     properties: [
         "cppflags",
@@ -57,7 +57,7 @@ camera_needs_client_info_lib {
 soong_config_module_type {
     name: "target_alternative_futex_waiters",
     module_type: "cc_defaults",
-    config_namespace: "flamingoGlobalVars",
+    config_namespace: "flamingo",
     bool_variables: ["target_alternative_futex_waiters"],
     properties: [
         "cflags",
@@ -78,7 +78,7 @@ target_alternative_futex_waiters {
 soong_config_module_type {
     name: "target_process_sdk_version_overrides",
     module_type: "cc_defaults",
-    config_namespace: "flamingoGlobalVars",
+    config_namespace: "flamingo",
     value_variables: ["target_process_sdk_version_override"],
     properties: ["cppflags"],
 }
@@ -95,7 +95,7 @@ target_process_sdk_version_overrides {
 soong_config_module_type {
     name: "target_shim_libs",
     module_type: "cc_defaults",
-    config_namespace: "flamingoGlobalVars",
+    config_namespace: "flamingo",
     value_variables: ["target_ld_shim_libs"],
     properties: ["cppflags"],
 }
@@ -112,7 +112,7 @@ target_shim_libs {
 soong_config_module_type {
     name: "vendor_init",
     module_type: "cc_defaults",
-    config_namespace: "flamingoGlobalVars",
+    config_namespace: "flamingo",
     value_variables: ["target_init_vendor_lib"],
     properties: ["whole_static_libs"],
 }
@@ -129,7 +129,7 @@ vendor_init {
 soong_config_module_type {
     name: "surfaceflinger_udfps_lib",
     module_type: "cc_defaults",
-    config_namespace: "flamingoGlobalVars",
+    config_namespace: "flamingo",
     value_variables: ["target_surfaceflinger_udfps_lib"],
     properties: [
         "cppflags",
@@ -150,7 +150,7 @@ surfaceflinger_udfps_lib {
 soong_config_module_type {
     name: "qti_usb_hal_supported_modes",
     module_type: "cc_defaults",
-    config_namespace: "flamingoGlobalVars",
+    config_namespace: "flamingo",
     bool_variables: ["supports_audio_accessory", "supports_debug_accessory"],
     properties: [
         "cppflags",
